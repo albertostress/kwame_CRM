@@ -182,4 +182,12 @@ Quando tudo estiver funcionando:
 - MySQL vai inicializar com volume limpo
 - Seu EspoCRM customizado vai rodar perfeitamente!
 
-**✅ SEUS ARQUIVOS ESTÃO PERFEITOS - SÓ PRECISA LIMPAR O VOLUME MYSQL!** 🎉
+**✅ SEUS ARQUIVOS ESTÃO PERFEITOS - CONFIGURAÇÃO OTIMIZADA PARA DOKPLOY!** 🎉
+
+## 📋 **MUDANÇAS APLICADAS**
+- ✅ Network: `dokploy-network` (externa)
+- ✅ Ports: `expose: 80` (sem conflitos)
+- ✅ Health checks: reabilitados
+- ✅ Container Port: `80` para domínios
+
+Veja `DEPLOY-DOKPLOY.md` para guia completo! 🚀

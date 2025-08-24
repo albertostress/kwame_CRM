@@ -5,8 +5,8 @@ services:
       dockerfile: Dockerfile.fast
     container_name: espocrm-app
     restart: unless-stopped
-    ports:
-      - "${APP_PORT:-8080}:80"
+    expose:
+      - "80"
     environment:
       - SITE_URL=${SITE_URL:-https://crm.kwameoilandgas.ao}
       - DB_HOST=mysql
@@ -21,9 +21,9 @@ services:
     depends_on:
       - mysql
     networks:
-      - espocrm-network
+      - dokploy-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/", "||", "exit", "1"]
+      test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 30s
       timeout: 15s
       retries: 5
@@ -56,14 +56,13 @@ services:
       --innodb_flush_method=fsync
       --skip-log-bin
     networks:
-      - espocrm-network
-    # Temporarily disable health check to debug startup issues
-    # healthcheck:
-    #   test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
-    #   interval: 15s
-    #   timeout: 10s
-    #   retries: 10
-    #   start_period: 60s
+      - dokploy-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
 volumes:
   mysql_data:
@@ -76,5 +75,5 @@ volumes:
     driver: local
 
 networks:
-  espocrm-network:
-    driver: bridge
+  dokploy-network:
+    external: true
