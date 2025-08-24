@@ -14,15 +14,23 @@ RUN apk add --no-cache \
     oniguruma-dev \
     mysql-client \
     iputils \
-    net-tools
+    net-tools \
+    freetype-dev \
+    libjpeg-turbo-dev \
+    libpng-dev \
+    libwebp-dev \
+    libexif-dev
 
-# Install PHP extensions
-RUN docker-php-ext-install \
+# Install PHP extensions (including GD and EXIF for EspoCRM)
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install \
     pdo \
     pdo_mysql \
     mysqli \
     intl \
-    zip
+    zip \
+    gd \
+    exif
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
