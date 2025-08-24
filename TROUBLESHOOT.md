@@ -22,13 +22,24 @@
 
 ## 🔧 Como Resolver Problemas Comuns
 
-### 1. **MySQL não inicia**
+### 1. **MySQL não inicia - Volume Corrompido** ⚠️
 ```bash
-# No servidor Dokploy
-docker logs espocrm-mysql
+# ERRO: "data directory has files in it. Aborting"
+# SOLUÇÃO: Reset completo do volume MySQL
 
-# Se ver erros de volume corrompido:
-docker volume rm [VOLUME_NAME]
+# No Dokploy Dashboard:
+# 1. Parar aplicação
+# 2. Ir em Volumes/Storage 
+# 3. Deletar volume mysql_data
+# 4. Redeploy aplicação
+
+# OU via SSH no servidor:
+./reset-mysql.sh
+
+# OU manual:
+docker compose down -v
+docker volume rm crm2025-kwamecrm-xuacgh_mysql_data
+# Depois redeploy no Dokploy
 ```
 
 ### 2. **EspoCRM Bad Gateway**
