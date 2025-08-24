@@ -290,3 +290,38 @@ docker compose down && docker compose up --build
 - ✅ **Port interno**: 8080
 - ✅ **Domain mapping**: Container port 8080 → https://crm.kwameoilandgas.ao
 - ✅ **Healthcheck**: Aguarda MySQL healthy + EspoCRM ready
+
+## 📑 Nginx Root Update
+**Timestamp: 2025-01-24**
+
+### Configuração Atualizada
+O `nginx.conf` foi atualizado para apontar para o diretório público correto do EspoCRM:
+
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+    root /var/www/html/public;  # ✅ Atualizado de /var/www/html
+    index index.php index.html;
+}
+```
+
+### Benefícios
+- ✅ **Resolve erro 404**: "Page not found" é corrigido
+- ✅ **Estrutura correta**: EspoCRM espera servir do diretório `/public`
+- ✅ **Segurança melhorada**: Não expõe arquivos de configuração no root
+- ✅ **Padrão EspoCRM**: Segue a estrutura oficial do projeto
+
+### Redeploy no Dokploy
+Após esta alteração, execute:
+```bash
+docker compose up -d --build
+```
+
+### Reverter (se necessário)
+Para reverter para o diretório anterior:
+```nginx
+root /var/www/html;  # Configuração anterior
+```
+
+**Nota**: Esta alteração só afeta o Nginx. PHP, MySQL e Supervisor permanecem inalterados.
