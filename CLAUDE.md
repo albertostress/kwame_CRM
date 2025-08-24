@@ -176,3 +176,60 @@ php command.php <command-name>
 1. Create hook class in `application/Espo/Hooks/<EntityName>/<HookName>.php`
 2. Implement appropriate hook method (beforeSave, afterSave, etc.)
 3. Clear cache to register hook
+
+## MySQL Connection Reset Instructions
+
+### 1. Reset MySQL Volume (se conexão falhar)
+```bash
+# Para volumes do Dokploy
+docker volume rm <project_name>_mysql_data
+
+# Para verificar volumes existentes
+docker volume ls | grep mysql
+```
+
+### 2. Rebuild and Start
+```bash
+# Subir containers com rebuild
+docker compose up -d --build
+```
+
+### 3. Reset Completo e Rebuild
+```bash
+# Reset completo com volumes
+docker compose down -v
+
+# Rebuild containers
+docker compose up -d --build
+```
+
+### 4. Test MySQL Connection
+```bash
+# Testar ping do EspoCRM para MySQL
+docker exec -it espocrm-app ping espocrm-mysql
+
+# Testar conexão MySQL direta do EspoCRM
+docker exec -it espocrm-app mysql -uespocrm -pespocrm123 -h espocrm-mysql espocrm
+
+# Conectar diretamente ao MySQL
+docker exec -it espocrm-mysql mysql -u espocrm -pespocrm123 -h localhost espocrm
+
+# Verificar status dos containers
+docker ps
+
+# Ver logs do MySQL
+docker logs espocrm-mysql
+
+# Ver logs do EspoCRM
+docker logs espocrm-app
+```
+
+### 5. Configuração MySQL Corrigida
+```env
+DB_HOST=espocrm-mysql  # Nome correto do serviço MySQL
+DB_PORT=3306
+DB_NAME=espocrm
+DB_USER=espocrm
+DB_PASSWORD=espocrm123
+DB_ROOT_PASSWORD=root123
+```

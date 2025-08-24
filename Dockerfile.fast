@@ -1,13 +1,15 @@
 # Fast and reliable Dockerfile for EspoCRM
 FROM php:8.2-fpm-alpine
 
-# Install essential packages
+# Install essential packages with debugging tools
 RUN apk add --no-cache \
     nginx \
     supervisor \
     curl \
     mysql-client \
     bash \
+    iputils \
+    net-tools \
     && docker-php-ext-install pdo pdo_mysql mysqli \
     && rm -rf /var/cache/apk/*
 
@@ -38,36 +40,44 @@ RUN mkdir -p /var/log/supervisor /run/nginx /var/log/nginx \
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Create wait-for-mysql script with timeout
+# Create wait-for-mysql script with better debugging
 RUN echo '#!/bin/bash' > /wait-for-mysql.sh \
-    && echo 'set -e' >> /wait-for-mysql.sh \
     && echo 'echo "🔍 Waiting for MySQL connection..."' >> /wait-for-mysql.sh \
-    && echo 'TIMEOUT=120' >> /wait-for-mysql.sh \
+    && echo 'echo "📋 Connection details:"' >> /wait-for-mysql.sh \
+    && echo 'echo "   Host: ${DB_HOST:-mysql}"' >> /wait-for-mysql.sh \
+    && echo 'echo "   User: ${DB_USER}"' >> /wait-for-mysql.sh \
+    && echo 'echo "   Database: ${DB_NAME}"' >> /wait-for-mysql.sh \
+    && echo '' >> /wait-for-mysql.sh \
+    && echo 'TIMEOUT=180' >> /wait-for-mysql.sh \
     && echo 'COUNTER=0' >> /wait-for-mysql.sh \
-    && echo 'until mysql -h mysql -u ${DB_USER} -p${DB_PASSWORD} -e "SELECT 1" >/dev/null 2>&1; do' >> /wait-for-mysql.sh \
-    && echo '  echo "⏳ MySQL not ready yet... waiting 5s ($COUNTER/$TIMEOUT)"' >> /wait-for-mysql.sh \
-    && echo '  sleep 5' >> /wait-for-mysql.sh \
-    && echo '  COUNTER=$((COUNTER + 5))' >> /wait-for-mysql.sh \
+    && echo 'until mysql -h ${DB_HOST:-mysql} -u ${DB_USER} -p${DB_PASSWORD} -e "SELECT 1" >/dev/null 2>&1; do' >> /wait-for-mysql.sh \
+    && echo '  echo "⏳ MySQL not ready yet... waiting 10s ($COUNTER/$TIMEOUT)"' >> /wait-for-mysql.sh \
+    && echo '  sleep 10' >> /wait-for-mysql.sh \
+    && echo '  COUNTER=$((COUNTER + 10))' >> /wait-for-mysql.sh \
     && echo '  if [ $COUNTER -ge $TIMEOUT ]; then' >> /wait-for-mysql.sh \
     && echo '    echo "❌ MySQL failed to start within $TIMEOUT seconds"' >> /wait-for-mysql.sh \
-    && echo '    echo "🔍 Trying to connect to MySQL without password for debugging..."' >> /wait-for-mysql.sh \
-    && echo '    mysqladmin ping -h mysql --silent || echo "❌ MySQL not responding to ping"' >> /wait-for-mysql.sh \
-    && echo '    exit 1' >> /wait-for-mysql.sh \
+    && echo '    echo "🔍 Debug info:"' >> /wait-for-mysql.sh \
+    && echo '    echo "   Trying ping to ${DB_HOST:-mysql}..."' >> /wait-for-mysql.sh \
+    && echo '    ping -c 1 ${DB_HOST:-mysql} || echo "   Cannot reach MySQL host"' >> /wait-for-mysql.sh \
+    && echo '    echo "   MySQL might not be running or network issue"' >> /wait-for-mysql.sh \
+    && echo '    echo "⚠️  Continuing anyway to allow manual database setup..."' >> /wait-for-mysql.sh \
+    && echo '    exit 0' >> /wait-for-mysql.sh \
     && echo '  fi' >> /wait-for-mysql.sh \
     && echo 'done' >> /wait-for-mysql.sh \
     && echo 'echo "✅ MySQL connection successful!"' >> /wait-for-mysql.sh \
     && chmod +x /wait-for-mysql.sh
 
-# Create enhanced startup script
+# Create enhanced startup script with better error handling
 RUN echo '#!/bin/bash' > /start.sh \
-    && echo 'set -e' >> /start.sh \
     && echo 'echo "🚀 Starting EspoCRM for Kwame Oil and Gas..."' >> /start.sh \
     && echo 'echo "🌍 Domain: ${SITE_URL:-crm.kwameoilandgas.ao}"' >> /start.sh \
     && echo 'echo "🏢 Company: Kwame Oil and Gas"' >> /start.sh \
     && echo '' >> /start.sh \
     && echo '# Wait for MySQL if DB_HOST is set' >> /start.sh \
     && echo 'if [ ! -z "${DB_HOST}" ] && [ "${DB_HOST}" != "localhost" ]; then' >> /start.sh \
-    && echo '  /wait-for-mysql.sh' >> /start.sh \
+    && echo '  /wait-for-mysql.sh || echo "⚠️ MySQL connection failed, but continuing..."' >> /start.sh \
+    && echo 'else' >> /start.sh \
+    && echo '  echo "📌 DB_HOST not set or is localhost, skipping MySQL wait"' >> /start.sh \
     && echo 'fi' >> /start.sh \
     && echo '' >> /start.sh \
     && echo '# Clear cache if available' >> /start.sh \
@@ -77,6 +87,7 @@ RUN echo '#!/bin/bash' > /start.sh \
     && echo 'fi' >> /start.sh \
     && echo '' >> /start.sh \
     && echo 'echo "✅ Starting services via supervisor..."' >> /start.sh \
+    && echo 'echo "📋 Web interface will be available even if MySQL is not ready"' >> /start.sh \
     && echo 'exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf' >> /start.sh \
     && chmod +x /start.sh
 
