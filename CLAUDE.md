@@ -246,3 +246,47 @@ DB_ROOT_PASSWORD=root123
 - ✅ **Acesso via container**: Use `docker exec -it espocrm-mysql mysql -uespocrm -pespocrm123 espocrm`
 - ✅ **Rede interna**: Comunicação entre containers via nome de serviço `mysql`
 - ⚠️  **Acesso externo**: Se precisar, reative `ports: - "3307:3306"` no docker-compose.yml
+
+## Docker Build Options
+
+### Production Build (Dockerfile.full) - **DEFAULT**
+**Timestamp: 2025-01-24**
+
+O `docker-compose.yml` usa `Dockerfile.full` por padrão para deployments em produção no Dokploy.
+
+**Características:**
+- ✅ **Base**: `php:8.2-fpm-alpine`
+- ✅ **Dependências completas**: composer, nginx, supervisor
+- ✅ **Extensões PHP**: pdo, pdo_mysql, mysqli, intl, zip
+- ✅ **Configurações otimizadas**: 512MB memory_limit, timezone Africa/Luanda
+- ✅ **Port**: 8080 (interno)
+- ✅ **Composer install**: `--no-dev --optimize-autoloader`
+- ✅ **Permissões corretas**: www-data ownership, 775 em data/custom
+
+### Development Build (Dockerfile.fast)
+Para desenvolvimento local ou debug:
+
+```yaml
+# Temporário no docker-compose.yml:
+build:
+  context: .
+  dockerfile: Dockerfile.fast  # Trocar para debug/local
+```
+
+**Como alternar entre builds:**
+```bash
+# Para produção (Dokploy)
+sed -i 's/Dockerfile.fast/Dockerfile.full/' docker-compose.yml
+
+# Para desenvolvimento local  
+sed -i 's/Dockerfile.full/Dockerfile.fast/' docker-compose.yml
+
+# Rebuild after change
+docker compose down && docker compose up --build
+```
+
+### Dokploy Deployment
+- ✅ **Usar**: `Dockerfile.full` (já configurado)
+- ✅ **Port interno**: 8080
+- ✅ **Domain mapping**: Container port 8080 → https://crm.kwameoilandgas.ao
+- ✅ **Healthcheck**: Aguarda MySQL healthy + EspoCRM ready

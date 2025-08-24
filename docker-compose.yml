@@ -2,11 +2,11 @@ services:
   espocrm:
     build: 
       context: .
-      dockerfile: Dockerfile.fast
+      dockerfile: Dockerfile.full
     container_name: espocrm-app
     restart: unless-stopped
     expose:
-      - "80"
+      - "8080"
     environment:
       - SITE_URL=${SITE_URL:-https://crm.kwameoilandgas.ao}
       - DB_HOST=${DB_HOST:-mysql}
@@ -24,7 +24,7 @@ services:
     networks:
       - dokploy-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
       interval: 30s
       timeout: 15s
       retries: 5
