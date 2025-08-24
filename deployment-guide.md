@@ -27,7 +27,7 @@ git push origin master
 ### Step 2: Configure Dokploy
 
 1. **Log into Dokploy Dashboard**
-   - Access your Dokploy instance at `https://your-dokploy-domain.com`
+   - Access your Dokploy instance
 
 2. **Create New Application**
    - Click "New Application"
@@ -41,17 +41,17 @@ git push origin master
 
 4. **Configure Environment Variables**
    - Copy contents from `.env.example`
-   - Update with your actual values:
+   - Use the provided `.env.production` file as template:
      ```env
-     SITE_URL=https://crm.yourdomain.com
-     DB_PASSWORD=generate_secure_password
-     DB_ROOT_PASSWORD=generate_secure_root_password
-     ADMIN_PASSWORD=generate_secure_admin_password
-     ADMIN_EMAIL=your-email@domain.com
+     SITE_URL=https://crm.kwameoilandgas.ao
+     DB_PASSWORD=KwameOilGas2024_DB!@#
+     DB_ROOT_PASSWORD=KwameRoot2024_SQL!@#
+     ADMIN_PASSWORD=KwameAdmin2024!@#
+     ADMIN_EMAIL=admin@kwameoilandgas.ao
      ```
 
 5. **Domain Configuration**
-   - Add your domain: `crm.yourdomain.com`
+   - Add your domain: `crm.kwameoilandgas.ao`
    - Enable SSL (Let's Encrypt)
    - Port: 80
 
@@ -63,11 +63,11 @@ git push origin master
    - Wait for containers to start
 
 2. **Verify Deployment**
-   - Access `https://crm.yourdomain.com`
+   - Access `https://crm.kwameoilandgas.ao`
    - You should see EspoCRM installation or login page
 
 3. **Complete Installation** (First time only)
-   - Navigate to `https://crm.yourdomain.com/install`
+   - Navigate to `https://crm.kwameoilandgas.ao/install`
    - Follow installation wizard
    - Use the database credentials from your environment variables
 
