@@ -1,0 +1,81 @@
+# Docker Compose optimized for Dokploy
+version: "3.8"
+
+services:
+  espocrm:
+    build: 
+      context: .
+      dockerfile: Dockerfile.fast
+    container_name: espocrm-app
+    restart: unless-stopped
+    expose:
+      - "80"  # Only expose internal port, Dokploy handles external mapping
+    environment:
+      - SITE_URL=${SITE_URL:-https://crm.kwameoilandgas.ao}
+      - DB_HOST=mysql
+      - DB_NAME=${DB_NAME:-espocrm_kwame}
+      - DB_USER=${DB_USER:-espocrm_user}
+      - DB_PASSWORD=${DB_PASSWORD:-KwameOilGas2024_DB!@#}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-KwameRoot2024_SQL!@#}
+    volumes:
+      # Use Dokploy recommended persistent storage pattern
+      - "../files/espocrm-data:/var/www/html/data"
+      - "../files/espocrm-custom:/var/www/html/custom"
+      - "../files/espocrm-uploads:/var/www/html/data/upload"
+    depends_on:
+      - mysql
+    networks:
+      - dokploy-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/", "||", "exit", "1"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 120s
+    # Traefik labels for domain routing (optional - can be set in Dokploy UI)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.espocrm-app.rule=Host(`crm.kwameoilandgas.ao`)"
+      - "traefik.http.routers.espocrm-app.entrypoints=websecure"
+      - "traefik.http.routers.espocrm-app.tls.certResolver=letsencrypt"
+      - "traefik.http.services.espocrm-app.loadbalancer.server.port=80"
+
+  mysql:
+    image: mysql:8.0
+    container_name: espocrm-mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-KwameRoot2024_SQL!@#}
+      - MYSQL_DATABASE=${DB_NAME:-espocrm_kwame}
+      - MYSQL_USER=${DB_USER:-espocrm_user}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-KwameOilGas2024_DB!@#}
+      - MYSQL_ALLOW_EMPTY_PASSWORD=no
+      - MYSQL_RANDOM_ROOT_PASSWORD=no
+    volumes:
+      # Use Dokploy recommended persistent storage pattern
+      - "../files/mysql-data:/var/lib/mysql"
+      - "./init-mysql.sh:/docker-entrypoint-initdb.d/init-mysql.sh:ro"
+    # No need to expose port 3306 externally for internal communication
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_allowed_packet=64M
+      --innodb_buffer_pool_size=128M
+      --sql_mode=STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO
+      --innodb_use_native_aio=0
+      --innodb_flush_method=fsync
+      --skip-log-bin
+    networks:
+      - dokploy-network
+    # Simple health check without authentication issues
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+networks:
+  dokploy-network:
+    external: true
