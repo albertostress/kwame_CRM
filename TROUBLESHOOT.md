@@ -47,7 +47,18 @@ docker logs espocrm-app
 # MySQL container: porta 3307 (externa) -> 3306 (interna)
 ```
 
-### 4. **Deploy muito lento**
+### 4. **MySQL container unhealthy**
+```bash
+# Health check melhorado com --silent
+# Start period aumentado para 60s
+# Verificar logs MySQL:
+docker logs espocrm-mysql
+
+# Testar health check manualmente:
+docker exec espocrm-mysql mysqladmin ping -h localhost --silent
+```
+
+### 5. **Deploy muito lento**
 - ✅ Use `Dockerfile.fast` (já configurado)
 - ✅ Configuração otimizada já aplicada
 

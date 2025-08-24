@@ -59,11 +59,11 @@ services:
     networks:
       - espocrm-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-KwameRoot2024_SQL!@#}"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 15s
+      timeout: 10s
       retries: 10
-      start_period: 30s
+      start_period: 60s
 
 volumes:
   mysql_data:
