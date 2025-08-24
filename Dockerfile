@@ -58,7 +58,7 @@ COPY build-frontend.sh /build-frontend.sh
 RUN chmod +x /build-frontend.sh && /build-frontend.sh
 
 # Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html \

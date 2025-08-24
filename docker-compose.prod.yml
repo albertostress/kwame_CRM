@@ -1,0 +1,79 @@
+services:
+  espocrm:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: espocrm-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-80}:80"
+    environment:
+      - ESPOCRM_DATABASE_HOST=mysql
+      - ESPOCRM_DATABASE_PORT=3306
+      - ESPOCRM_DATABASE_NAME=${DB_NAME:-espocrm_kwame}
+      - ESPOCRM_DATABASE_USER=${DB_USER:-espocrm_user}
+      - ESPOCRM_DATABASE_PASSWORD=${DB_PASSWORD:-KwameOilGas2024_DB!@#}
+      - ESPOCRM_ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ESPOCRM_ADMIN_PASSWORD=${ADMIN_PASSWORD:-KwameAdmin2024!@#}
+      - ESPOCRM_SITE_URL=${SITE_URL:-https://crm.kwameoilandgas.ao}
+      - TZ=Africa/Luanda
+    volumes:
+      - espocrm_data:/var/www/html/data
+      - espocrm_custom:/var/www/html/custom
+      - espocrm_logs:/var/log
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - espocrm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/v1/App/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  mysql:
+    image: mysql:8.0
+    container_name: espocrm-mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-KwameRoot2024_SQL!@#}
+      - MYSQL_DATABASE=${DB_NAME:-espocrm_kwame}
+      - MYSQL_USER=${DB_USER:-espocrm_user}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-KwameOilGas2024_DB!@#}
+      - TZ=Africa/Luanda
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_allowed_packet=64M
+      --innodb_buffer_pool_size=256M
+      --innodb_log_file_size=64M
+      --innodb_flush_log_at_trx_commit=2
+      --innodb_flush_method=O_DIRECT
+    networks:
+      - espocrm-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-KwameRoot2024_SQL!@#}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  mysql_data:
+    driver: local
+  espocrm_data:
+    driver: local
+  espocrm_custom:
+    driver: local
+  espocrm_logs:
+    driver: local
+
+networks:
+  espocrm-network:
+    driver: bridge

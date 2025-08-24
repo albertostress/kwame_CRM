@@ -1,26 +1,21 @@
-version: '3.8'
-
 services:
   espocrm:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.fast
     container_name: espocrm-app
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8080}:80"
+      - "${APP_PORT:-80}:80"
     environment:
-      - ESPOCRM_DATABASE_HOST=mysql
-      - ESPOCRM_DATABASE_PORT=3306
-      - ESPOCRM_DATABASE_NAME=${DB_NAME:-espocrm}
-      - ESPOCRM_DATABASE_USER=${DB_USER:-espocrm}
-      - ESPOCRM_DATABASE_PASSWORD=${DB_PASSWORD:-espocrm_password}
-      - ESPOCRM_ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
-      - ESPOCRM_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
-      - ESPOCRM_SITE_URL=${SITE_URL:-http://localhost:8080}
+      - SITE_URL=${SITE_URL:-https://crm.kwameoilandgas.ao}
+      - DB_HOST=mysql
+      - DB_NAME=${DB_NAME:-espocrm_kwame}
+      - DB_USER=${DB_USER:-espocrm_user}
+      - DB_PASSWORD=${DB_PASSWORD:-KwameOilGas2024_DB!@#}
     volumes:
       - espocrm_data:/var/www/html/data
       - espocrm_custom:/var/www/html/custom
-      - espocrm_client_custom:/var/www/html/client/custom
-      - espocrm_modules:/var/www/html/application/Espo/Modules
     depends_on:
       - mysql
     networks:
@@ -31,52 +26,23 @@ services:
     container_name: espocrm-mysql
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_password}
-      - MYSQL_DATABASE=${DB_NAME:-espocrm}
-      - MYSQL_USER=${DB_USER:-espocrm}
-      - MYSQL_PASSWORD=${DB_PASSWORD:-espocrm_password}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-KwameRoot2024_SQL!@#}
+      - MYSQL_DATABASE=${DB_NAME:-espocrm_kwame}
+      - MYSQL_USER=${DB_USER:-espocrm_user}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-KwameOilGas2024_DB!@#}
     volumes:
       - mysql_data:/var/lib/mysql
-    ports:
-      - "${DB_PORT:-3306}:3306"
     command: >
       --default-authentication-plugin=mysql_native_password
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
-      --max_allowed_packet=64M
-      --innodb_buffer_pool_size=256M
-    networks:
-      - espocrm-network
-
-  # Optional: phpMyAdmin for database management
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: espocrm-phpmyadmin
-    restart: unless-stopped
-    environment:
-      - PMA_HOST=mysql
-      - PMA_PORT=3306
-      - PMA_USER=${DB_USER:-espocrm}
-      - PMA_PASSWORD=${DB_PASSWORD:-espocrm_password}
-    ports:
-      - "${PMA_PORT:-8081}:80"
-    depends_on:
-      - mysql
     networks:
       - espocrm-network
 
 volumes:
   mysql_data:
-    driver: local
   espocrm_data:
-    driver: local
   espocrm_custom:
-    driver: local
-  espocrm_client_custom:
-    driver: local
-  espocrm_modules:
-    driver: local
 
 networks:
   espocrm-network:
-    driver: bridge
