@@ -14,11 +14,17 @@
 - Health checks aprimorados
 - Configuração robusta de conexão
 
+### ❌ **EspoCRM não baixado durante build**
+**✅ Solução**: 
+- Dockerfile.download baixa EspoCRM automaticamente
+- Versão 8.4.2 baixada diretamente do GitHub
+- Não depende mais de arquivos locais
+
 ### ❌ **Build lento/falhas NPM/Composer**  
 **✅ Solução**:
-- Dockerfile.fast otimizado
-- Removidos scripts problemáticos
+- Download direto do EspoCRM (sem builds complexos)
 - Build em 5-10 minutos
+- Eliminados problemas de dependências
 
 ## 🔧 Como Resolver Problemas Comuns
 

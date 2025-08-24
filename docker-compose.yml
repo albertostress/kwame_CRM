@@ -2,7 +2,7 @@ services:
   espocrm:
     build: 
       context: .
-      dockerfile: Dockerfile.fast
+      dockerfile: Dockerfile.download
     container_name: espocrm-app
     restart: unless-stopped
     ports:
