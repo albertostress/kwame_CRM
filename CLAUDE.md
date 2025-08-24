@@ -203,16 +203,22 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-### 4. Test MySQL Connection (Internal Network Only)
+### 4. Healthcheck e Dependências
+**Nova configuração com service_healthy:**
+- ✅ EspoCRM só inicia quando MySQL estiver `healthy`
+- ✅ `wait-for-mysql.sh` adiciona delay fixo de 20s
+- ✅ Mais confiável que loops infinitos
+
+### 5. Test MySQL Connection (Internal Network Only)
 ```bash
+# Conectar diretamente ao MySQL (comando principal)
+docker exec -it espocrm-mysql mysql -uespocrm -pespocrm123 espocrm
+
 # Testar ping do EspoCRM para MySQL (rede interna)
 docker exec -it espocrm-app ping mysql
 
 # Testar conexão MySQL direta do EspoCRM
 docker exec -it espocrm-app mysql -uespocrm -pespocrm123 -h mysql espocrm
-
-# Conectar diretamente ao MySQL (acesso principal)
-docker exec -it espocrm-mysql mysql -uespocrm -pespocrm123 espocrm
 
 # Verificar status dos containers
 docker ps
@@ -224,7 +230,7 @@ docker logs espocrm-mysql
 docker logs espocrm-app
 ```
 
-### 5. Configuração MySQL (Rede Interna Docker)
+### 6. Configuração MySQL (Rede Interna Docker)
 ```env
 DB_HOST=mysql          # Nome do serviço Docker interno
 DB_PORT=3306           # Porta interna (não exposta ao host)
@@ -235,6 +241,7 @@ DB_ROOT_PASSWORD=root123
 ```
 
 **IMPORTANTE:**
+- ✅ **Healthcheck**: EspoCRM aguarda MySQL ficar `healthy`
 - ✅ **Sem conflito de portas**: MySQL não expõe porta 3306 ao host
 - ✅ **Acesso via container**: Use `docker exec -it espocrm-mysql mysql -uespocrm -pespocrm123 espocrm`
 - ✅ **Rede interna**: Comunicação entre containers via nome de serviço `mysql`
