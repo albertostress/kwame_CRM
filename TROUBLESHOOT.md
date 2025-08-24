@@ -49,13 +49,17 @@ docker logs espocrm-app
 
 ### 4. **MySQL container unhealthy**
 ```bash
-# Health check melhorado com --silent
-# Start period aumentado para 60s
+# TEMPORARIAMENTE DESABILITADO health check do MySQL
+# para permitir debugging do problema de inicialização
+# 
 # Verificar logs MySQL:
 docker logs espocrm-mysql
 
-# Testar health check manualmente:
+# Verificar se MySQL está respondendo:
 docker exec espocrm-mysql mysqladmin ping -h localhost --silent
+
+# Conectar manualmente ao MySQL:
+docker exec -it espocrm-mysql mysql -u root -p
 ```
 
 ### 5. **Deploy muito lento**

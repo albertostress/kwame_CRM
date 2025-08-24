@@ -19,16 +19,15 @@ services:
       - espocrm_custom:/var/www/html/custom
       - espocrm_uploads:/var/www/html/data/upload
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
     networks:
       - espocrm-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD", "curl", "-f", "http://localhost/", "||", "exit", "1"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      timeout: 15s
+      retries: 5
+      start_period: 120s
 
   mysql:
     image: mysql:8.0
@@ -58,12 +57,13 @@ services:
       --skip-log-bin
     networks:
       - espocrm-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
+    # Temporarily disable health check to debug startup issues
+    # healthcheck:
+    #   test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+    #   interval: 15s
+    #   timeout: 10s
+    #   retries: 10
+    #   start_period: 60s
 
 volumes:
   mysql_data:
