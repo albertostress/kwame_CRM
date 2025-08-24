@@ -1,10 +1,12 @@
-# Multi-stage build for EspoCRM
-FROM php:8.2-fpm-alpine AS base
+# Single-stage build for EspoCRM
+FROM php:8.2-fpm-alpine
 
-# Install required PHP extensions and dependencies
+# Install system dependencies and PHP extensions
 RUN apk add --no-cache \
     nginx \
     supervisor \
+    nodejs \
+    npm \
     curl \
     zip \
     unzip \
@@ -51,20 +53,9 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
-# Install Node.js for building frontend assets
-FROM node:18-alpine AS frontend-builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-# Final stage
-FROM base AS production
-
-# Copy built assets from frontend-builder
-COPY --from=frontend-builder /app/client/lib /var/www/html/client/lib
-COPY --from=frontend-builder /app/client/css/espo*.css /var/www/html/client/css/
+# Install Node.js dependencies and build frontend
+COPY build-frontend.sh /build-frontend.sh
+RUN chmod +x /build-frontend.sh && /build-frontend.sh
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
@@ -83,11 +74,28 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copy supervisor configuration
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# Create directories and set permissions
+RUN mkdir -p /var/log/supervisor \
+    && mkdir -p /run/nginx \
+    && mkdir -p /var/www/html/data/cache \
+    && mkdir -p /var/www/html/data/logs \
+    && mkdir -p /var/www/html/data/tmp \
+    && mkdir -p /var/www/html/data/upload \
+    && chown -R www-data:www-data /var/www/html/data
+
 # Create startup script
 RUN echo '#!/bin/sh' > /start.sh \
-    && echo 'php /var/www/html/clear_cache.php' >> /start.sh \
-    && echo '/usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf' >> /start.sh \
+    && echo 'set -e' >> /start.sh \
+    && echo 'echo "Starting EspoCRM..."' >> /start.sh \
+    && echo 'if [ -f /var/www/html/clear_cache.php ]; then' >> /start.sh \
+    && echo '  php /var/www/html/clear_cache.php || true' >> /start.sh \
+    && echo 'fi' >> /start.sh \
+    && echo 'exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf' >> /start.sh \
     && chmod +x /start.sh
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost/api/v1/App/health || exit 1
 
 EXPOSE 80
 
