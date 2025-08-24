@@ -182,7 +182,4 @@ Quando tudo estiver funcionando:
 - MySQL vai inicializar com volume limpo
 - Seu EspoCRM customizado vai rodar perfeitamente!
 
-**✅ SEUS ARQUIVOS ESTÃO PERFEITOS - USE O docker-compose.dokploy.yml OTIMIZADO!** 🎉
-
-## 📚 **DOCUMENTAÇÃO COMPLETA**
-Veja `DOKPLOY-DEPLOYMENT.md` para guia completo seguindo as melhores práticas do Dokploy.
+**✅ SEUS ARQUIVOS ESTÃO PERFEITOS - SÓ PRECISA LIMPAR O VOLUME MYSQL!** 🎉
