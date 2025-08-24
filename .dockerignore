@@ -1,0 +1,73 @@
+# Git
+.git
+.gitignore
+.github
+
+# Development files
+.idea
+.vscode
+*.log
+*.md
+.DS_Store
+Thumbs.db
+
+# Test files
+tests/
+phpunit.xml
+.phpunit.result.cache
+
+# Node modules (will be installed during build)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Development/build files
+.env.local
+.env.development
+.env.test
+Gruntfile.js
+webpack.config.js
+.babelrc
+.eslintrc
+
+# Documentation
+docs/
+README.md
+LICENSE.txt
+CONTRIBUTING.md
+
+# Cache and temporary files
+data/cache/*
+data/logs/*
+data/tmp/*
+data/upload/*
+!data/cache/.htaccess
+!data/logs/.htaccess
+!data/tmp/.htaccess
+!data/upload/.htaccess
+
+# Vendor files (will be installed during build)
+vendor/
+
+# Development tools
+dev/
+phpstan.neon
+.php-cs-fixer.cache
+
+# Docker files
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+.circleci
+
+# Backups
+*.sql
+*.sql.gz
+backup/
+backups/

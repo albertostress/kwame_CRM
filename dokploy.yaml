@@ -1,0 +1,109 @@
+# Dokploy Configuration for EspoCRM
+name: kwame-crm
+type: docker-compose
+
+# Build configuration
+build:
+  context: .
+  dockerfile: Dockerfile
+
+# Environment configuration
+env:
+  # Application settings
+  APP_PORT: 80
+  SITE_URL: ${DOKPLOY_URL}
+  
+  # Database configuration
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_NAME: espocrm
+  DB_USER: espocrm
+  DB_PASSWORD: ${DOKPLOY_DB_PASSWORD}
+  DB_ROOT_PASSWORD: ${DOKPLOY_DB_ROOT_PASSWORD}
+  
+  # Admin credentials
+  ADMIN_USERNAME: admin
+  ADMIN_PASSWORD: ${DOKPLOY_ADMIN_PASSWORD}
+  
+  # PHP settings
+  PHP_MEMORY_LIMIT: 256M
+  PHP_MAX_EXECUTION_TIME: 180
+  PHP_UPLOAD_MAX_SIZE: 50M
+
+# Domains configuration
+domains:
+  - domain: ${DOKPLOY_DOMAIN}
+    ssl: true
+    port: 80
+
+# Health check
+healthcheck:
+  enabled: true
+  path: /api/v1/App/health
+  interval: 30
+  timeout: 10
+  retries: 3
+
+# Resources
+resources:
+  limits:
+    memory: 1024M
+    cpu: 1
+  requests:
+    memory: 512M
+    cpu: 0.5
+
+# Volumes for persistent data
+volumes:
+  - name: espocrm_data
+    path: /var/www/html/data
+    size: 5Gi
+  - name: espocrm_custom
+    path: /var/www/html/custom
+    size: 2Gi
+  - name: espocrm_uploads
+    path: /var/www/html/data/upload
+    size: 10Gi
+  - name: mysql_data
+    path: /var/lib/mysql
+    size: 10Gi
+
+# Deployment settings
+deploy:
+  replicas: 1
+  strategy: RollingUpdate
+  maxUnavailable: 0
+  maxSurge: 1
+
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: 7  # Keep 7 days of backups
+  databases:
+    - mysql
+  volumes:
+    - espocrm_data
+    - espocrm_custom
+    - espocrm_uploads
+
+# Auto-deploy from GitHub
+autodeploy:
+  enabled: true
+  branch: main
+  trigger: push
+
+# Commands to run after deployment
+post_deploy:
+  - php clear_cache.php
+  - php rebuild.php
+  - php cron.php
+
+# Monitoring
+monitoring:
+  enabled: true
+  metrics:
+    - cpu
+    - memory
+    - disk
+    - network
