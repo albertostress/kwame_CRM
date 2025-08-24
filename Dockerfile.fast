@@ -28,7 +28,7 @@ COPY . .
 
 # Create required directories and set permissions
 RUN mkdir -p /var/log/supervisor /run/nginx /var/log/nginx \
-    && mkdir -p data/{cache,logs,tmp,upload} custom client/custom \
+    && mkdir -p data/cache data/logs data/tmp data/upload custom client/custom \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod -R 775 data custom client/custom \
