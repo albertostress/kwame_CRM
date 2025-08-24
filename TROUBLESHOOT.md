@@ -163,4 +163,23 @@ Quando tudo estiver funcionando:
 
 ---
 
-**Todas as correções já foram aplicadas nesta versão!** 🎉
+## 🎯 **PARA SEU ESPOCRM CUSTOMIZADO FUNCIONAR:**
+
+### 🧹 **PASSO 1: RESET COMPLETO**
+```bash
+# No servidor Dokploy (SSH):
+./clean-start.sh
+
+# OU no Dokploy Dashboard:
+# - Parar aplicação
+# - Deletar todos os volumes  
+# - Deletar containers
+```
+
+### 🚀 **PASSO 2: REDEPLOY**
+- Dokploy vai clonar seu repositório git
+- `COPY . .` vai copiar todo seu EspoCRM customizado
+- MySQL vai inicializar com volume limpo
+- Seu EspoCRM customizado vai rodar perfeitamente!
+
+**✅ SEUS ARQUIVOS ESTÃO PERFEITOS - SÓ PRECISA LIMPAR O VOLUME MYSQL!** 🎉
