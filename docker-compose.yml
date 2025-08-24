@@ -9,7 +9,7 @@ services:
       - "80"
     environment:
       - SITE_URL=${SITE_URL:-https://crm.kwameoilandgas.ao}
-      - DB_HOST=${DB_HOST:-espocrm-mysql}
+      - DB_HOST=${DB_HOST:-mysql}
       - DB_PORT=${DB_PORT:-3306}
       - DB_NAME=${DB_NAME:-espocrm}
       - DB_USER=${DB_USER:-espocrm}
@@ -19,7 +19,7 @@ services:
       - espocrm_data:/var/www/html/data
       - espocrm_custom:/var/www/html/custom
     depends_on:
-      - espocrm-mysql
+      - mysql
     networks:
       - dokploy-network
     healthcheck:
@@ -29,7 +29,7 @@ services:
       retries: 5
       start_period: 120s
 
-  espocrm-mysql:
+  mysql:
     image: mysql:8.0
     container_name: espocrm-mysql
     restart: unless-stopped
@@ -43,8 +43,6 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init-mysql.sh:/docker-entrypoint-initdb.d/init-mysql.sh:ro
-    ports:
-      - "3306:3306"  # DEBUG ONLY - Remove in production for security
     command: >
       --default-authentication-plugin=mysql_native_password
       --character-set-server=utf8mb4

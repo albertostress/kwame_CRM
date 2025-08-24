@@ -203,16 +203,16 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-### 4. Test MySQL Connection
+### 4. Test MySQL Connection (Internal Network Only)
 ```bash
-# Testar ping do EspoCRM para MySQL
-docker exec -it espocrm-app ping espocrm-mysql
+# Testar ping do EspoCRM para MySQL (rede interna)
+docker exec -it espocrm-app ping mysql
 
 # Testar conexão MySQL direta do EspoCRM
-docker exec -it espocrm-app mysql -uespocrm -pespocrm123 -h espocrm-mysql espocrm
+docker exec -it espocrm-app mysql -uespocrm -pespocrm123 -h mysql espocrm
 
-# Conectar diretamente ao MySQL
-docker exec -it espocrm-mysql mysql -u espocrm -pespocrm123 -h localhost espocrm
+# Conectar diretamente ao MySQL (acesso principal)
+docker exec -it espocrm-mysql mysql -uespocrm -pespocrm123 espocrm
 
 # Verificar status dos containers
 docker ps
@@ -224,12 +224,18 @@ docker logs espocrm-mysql
 docker logs espocrm-app
 ```
 
-### 5. Configuração MySQL Corrigida
+### 5. Configuração MySQL (Rede Interna Docker)
 ```env
-DB_HOST=espocrm-mysql  # Nome correto do serviço MySQL
-DB_PORT=3306
+DB_HOST=mysql          # Nome do serviço Docker interno
+DB_PORT=3306           # Porta interna (não exposta ao host)
 DB_NAME=espocrm
 DB_USER=espocrm
 DB_PASSWORD=espocrm123
 DB_ROOT_PASSWORD=root123
 ```
+
+**IMPORTANTE:**
+- ✅ **Sem conflito de portas**: MySQL não expõe porta 3306 ao host
+- ✅ **Acesso via container**: Use `docker exec -it espocrm-mysql mysql -uespocrm -pespocrm123 espocrm`
+- ✅ **Rede interna**: Comunicação entre containers via nome de serviço `mysql`
+- ⚠️  **Acesso externo**: Se precisar, reative `ports: - "3307:3306"` no docker-compose.yml
