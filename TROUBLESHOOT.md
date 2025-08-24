@@ -40,7 +40,14 @@ docker exec espocrm-mysql mysqladmin ping -u root -p
 docker logs espocrm-app
 ```
 
-### 3. **Deploy muito lento**
+### 3. **Erro "Port 3306 already in use"**
+```bash
+# MySQL do servidor já usa porta 3306
+# Solução: Usamos porta 3307 no docker-compose.yml
+# MySQL container: porta 3307 (externa) -> 3306 (interna)
+```
+
+### 4. **Deploy muito lento**
 - ✅ Use `Dockerfile.fast` (já configurado)
 - ✅ Configuração otimizada já aplicada
 
