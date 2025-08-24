@@ -52,7 +52,7 @@ COPY . .
 
 # Install PHP dependencies with Composer
 RUN if [ -f composer.json ]; then \
-        composer install --no-dev --optimize-autoloader --no-interaction; \
+        composer install --no-dev --optimize-autoloader --no-interaction --no-scripts; \
     fi
 
 # Create required directories and set permissions
