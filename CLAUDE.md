@@ -227,7 +227,7 @@ docker ps
 docker logs espocrm-mysql
 
 # Ver logs do EspoCRM
-docker logs espocrm-app
+docker logs kwame-crm-app
 ```
 
 ### 6. Configuração MySQL (Rede Interna Docker)
@@ -412,12 +412,12 @@ docker network inspect dokploy-network
 docker network ls | grep dokploy
 
 # Testar conectividade entre containers
-docker exec espocrm-app ping dokploy-traefik
+docker exec kwame-crm-app ping dokploy-traefik
 ```
 
 ### Troubleshooting Comum
 1. **502 Bad Gateway**: Container não responde na porta 8080
-   - Verificar: `docker logs espocrm-app`
+   - Verificar: `docker logs kwame-crm-app`
    - Testar: `curl -I http://container-ip:8080`
 
 2. **404 Not Found**: Routing não configurado
@@ -434,7 +434,7 @@ docker exec espocrm-app ping dokploy-traefik
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 # Ver detalhes do healthcheck
-docker inspect espocrm-app | grep -A 10 Health
+docker inspect kwame-crm-app | grep -A 10 Health
 ```
 
 **Nota**: Após alterações nos labels Traefik, é necessário fazer redeploy completo no Dokploy.
@@ -495,26 +495,26 @@ rm /var/www/html/data/config.php
 
 # Sair e reiniciar container
 exit
-docker restart espocrm-app
+docker restart kwame-crm-app
 
 # Verificar logs da regeneração
-docker logs espocrm-app --tail=20
+docker logs kwame-crm-app --tail=20
 ```
 
 ### Debug da Configuração
 ```bash
 # Ver se config.php existe
-docker exec espocrm-app ls -la /var/www/html/data/config.php
+docker exec kwame-crm-app ls -la /var/www/html/data/config.php
 
 # Ver conteúdo da configuração (sem passwords)
-docker exec espocrm-app php -r "
+docker exec kwame-crm-app php -r "
 \$config = include('/var/www/html/data/config.php');
 unset(\$config['database']['password']);
 print_r(\$config);
 "
 
 # Testar conexão à base de dados
-docker exec espocrm-app php -r "
+docker exec kwame-crm-app php -r "
 \$config = include('/var/www/html/data/config.php');
 try {
   \$pdo = new PDO(
@@ -577,20 +577,20 @@ curl -I http://localhost:8080/index.php
 docker ps --format "table {{.Names}}\t{{.Ports}}"
 
 # Testar healthcheck interno
-docker exec espocrm-app curl -I http://localhost:80/
+docker exec kwame-crm-app curl -I http://localhost:80/
 
 # Ver logs de healthcheck
-docker inspect espocrm-app | grep -A 5 Health
+docker inspect kwame-crm-app | grep -A 5 Health
 ```
 
 ### Troubleshooting de Porta
 1. **Connection refused**: Container não está a responder na porta 80
    - Verificar nginx está a fazer `listen 80;`
-   - Testar: `docker exec espocrm-app netstat -tlnp | grep :80`
+   - Testar: `docker exec kwame-crm-app netstat -tlnp | grep :80`
 
 2. **Healthcheck failing**: Curl não consegue conectar
-   - Verificar se nginx está running: `docker exec espocrm-app ps aux | grep nginx`
-   - Testar endpoint manualmente: `docker exec espocrm-app curl -v http://localhost:80/`
+   - Verificar se nginx está running: `docker exec kwame-crm-app ps aux | grep nginx`
+   - Testar endpoint manualmente: `docker exec kwame-crm-app curl -v http://localhost:80/`
 
 3. **502 Bad Gateway**: Traefik não consegue proxy
    - Verificar label: `traefik.http.services.espocrm.loadbalancer.server.port=80`
@@ -630,17 +630,17 @@ volumes:
 ### Testar Permissões
 ```bash
 # Verificar ownership dos diretórios
-docker exec espocrm-app ls -la /var/www/html/data/
+docker exec kwame-crm-app ls -la /var/www/html/data/
 
 # Testar escrita em logs
-docker exec espocrm-app touch /var/www/html/data/logs/test.log
-docker exec espocrm-app rm /var/www/html/data/logs/test.log
+docker exec kwame-crm-app touch /var/www/html/data/logs/test.log
+docker exec kwame-crm-app rm /var/www/html/data/logs/test.log
 
 # Verificar user www-data
-docker exec espocrm-app id www-data
+docker exec kwame-crm-app id www-data
 
 # Ver processos rodando como www-data
-docker exec espocrm-app ps aux | grep www-data
+docker exec kwame-crm-app ps aux | grep www-data
 ```
 
 ### Resolver "Permission Denied"
@@ -659,31 +659,31 @@ chmod -R 775 /var/www/html/custom
 
 # Sair e reiniciar
 exit
-docker restart espocrm-app
+docker restart kwame-crm-app
 ```
 
 #### 2. Verificar logs de erro:
 ```bash
 # Ver logs do PHP-FPM
-docker exec espocrm-app tail -f /var/log/php-fpm.log
+docker exec kwame-crm-app tail -f /var/log/php-fpm.log
 
 # Ver logs do EspoCRM
-docker exec espocrm-app tail -f /var/www/html/data/logs/espo.log
+docker exec kwame-crm-app tail -f /var/www/html/data/logs/espo.log
 
 # Ver logs do container
-docker logs espocrm-app --tail=50
+docker logs kwame-crm-app --tail=50
 ```
 
 #### 3. Debug de permissões específicas:
 ```bash
 # Verificar permissão de um ficheiro específico
-docker exec espocrm-app stat /var/www/html/data/config.php
+docker exec kwame-crm-app stat /var/www/html/data/config.php
 
 # Listar todos os ficheiros com problemas de permissão
-docker exec espocrm-app find /var/www/html/data -not -user www-data
+docker exec kwame-crm-app find /var/www/html/data -not -user www-data
 
 # Verificar espaço em disco
-docker exec espocrm-app df -h /var/www/html/data
+docker exec kwame-crm-app df -h /var/www/html/data
 ```
 
 ### Troubleshooting Comum
@@ -691,24 +691,24 @@ docker exec espocrm-app df -h /var/www/html/data
 #### "Could not write to cache"
 ```bash
 # Limpar e recriar cache
-docker exec espocrm-app rm -rf /var/www/html/data/cache/*
-docker exec espocrm-app php /var/www/html/clear_cache.php
+docker exec kwame-crm-app rm -rf /var/www/html/data/cache/*
+docker exec kwame-crm-app php /var/www/html/clear_cache.php
 ```
 
 #### "Failed to open log file"
 ```bash
 # Verificar e criar diretório de logs
-docker exec espocrm-app mkdir -p /var/www/html/data/logs
-docker exec espocrm-app chown www-data:www-data /var/www/html/data/logs
-docker exec espocrm-app chmod 775 /var/www/html/data/logs
+docker exec kwame-crm-app mkdir -p /var/www/html/data/logs
+docker exec kwame-crm-app chown www-data:www-data /var/www/html/data/logs
+docker exec kwame-crm-app chmod 775 /var/www/html/data/logs
 ```
 
 #### "Upload failed"
 ```bash
 # Verificar diretório de upload
-docker exec espocrm-app ls -la /var/www/html/data/upload/
-docker exec espocrm-app chown -R www-data:www-data /var/www/html/data/upload
-docker exec espocrm-app chmod -R 775 /var/www/html/data/upload
+docker exec kwame-crm-app ls -la /var/www/html/data/upload/
+docker exec kwame-crm-app chown -R www-data:www-data /var/www/html/data/upload
+docker exec kwame-crm-app chmod -R 775 /var/www/html/data/upload
 ```
 
 ### Backup e Restore de Volumes
@@ -773,7 +773,7 @@ docker exec -it espocrm-app rm -f /var/www/html/data/config.php
 docker exec -it espocrm-app rm -rf /var/www/html/data/cache/*
 
 # Reiniciar container
-docker restart espocrm-app
+docker restart kwame-crm-app
 
 # Abrir domínio - wizard vai aparecer
 https://crm.kwameoilandgas.ao/install/
@@ -799,10 +799,10 @@ docker exec -i espocrm-mysql mysql -uespocrm -pespocrm123 espocrm < backup.sql
 #### 3. **Reset Completo**
 ```bash
 # Limpar base de dados
-docker exec espocrm-mysql mysql -uespocrm -pespocrm123 -e "DROP DATABASE espocrm; CREATE DATABASE espocrm;"
+docker exec kwame-crm-mysql mysql -uespocrm -pespocrm123 -e "DROP DATABASE espocrm; CREATE DATABASE espocrm;"
 
 # Reiniciar container
-docker restart espocrm-app
+docker restart kwame-crm-app
 
 # Wizard aparece automaticamente
 ```
@@ -810,13 +810,13 @@ docker restart espocrm-app
 ### Verificar Estado da Instalação
 ```bash
 # Ver se BD tem tabelas
-docker exec espocrm-mysql mysql -uespocrm -pespocrm123 espocrm -e "SHOW TABLES;" | wc -l
+docker exec kwame-crm-mysql mysql -uespocrm -pespocrm123 espocrm -e "SHOW TABLES;" | wc -l
 
 # Ver se config.php existe
-docker exec espocrm-app ls -la /var/www/html/data/config.php
+docker exec kwame-crm-app ls -la /var/www/html/data/config.php
 
 # Ver logs do processo de detecção
-docker logs espocrm-app | grep -E "Database|wizard|config.php"
+docker logs kwame-crm-app | grep -E "Database|wizard|config.php"
 ```
 
 ### Troubleshooting
@@ -824,25 +824,25 @@ docker logs espocrm-app | grep -E "Database|wizard|config.php"
 #### Wizard não aparece com BD vazia
 ```bash
 # Forçar manualmente
-docker exec espocrm-app bash -c 'rm -f /var/www/html/data/config.php && rm -rf /var/www/html/data/cache/*'
-docker restart espocrm-app
+docker exec kwame-crm-app bash -c 'rm -f /var/www/html/data/config.php && rm -rf /var/www/html/data/cache/*'
+docker restart kwame-crm-app
 ```
 
 #### Erro "Access denied" no MySQL
 ```bash
 # Verificar credenciais
-docker exec espocrm-app printenv | grep DB_
+docker exec kwame-crm-app printenv | grep DB_
 
 # Testar conexão manual
-docker exec espocrm-app mysql -h"${DB_HOST}" -u"${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}" -e "SELECT 1;"
+docker exec kwame-crm-app mysql -h"${DB_HOST}" -u"${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}" -e "SELECT 1;"
 ```
 
 #### Loop infinito de redirecionamento
 ```bash
 # Limpar tudo e reiniciar
-docker exec espocrm-app bash -c 'rm -rf /var/www/html/data/cache/* && rm -f /var/www/html/data/config.php'
-docker exec espocrm-app chown -R www-data:www-data /var/www/html/data
-docker restart espocrm-app
+docker exec kwame-crm-app bash -c 'rm -rf /var/www/html/data/cache/* && rm -f /var/www/html/data/config.php'
+docker exec kwame-crm-app chown -R www-data:www-data /var/www/html/data
+docker restart kwame-crm-app
 ```
 
 ### Notas Importantes

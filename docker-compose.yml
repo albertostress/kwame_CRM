@@ -3,7 +3,7 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile.full
-    container_name: espocrm-app
+    container_name: kwame-crm-app
     restart: unless-stopped
     expose:
       - "80"
@@ -44,7 +44,7 @@ services:
 
   mysql:
     image: mysql:8.0
-    container_name: espocrm-mysql
+    container_name: kwame-crm-mysql
     restart: unless-stopped
     environment:
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root123}
