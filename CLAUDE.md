@@ -438,3 +438,108 @@ docker inspect espocrm-app | grep -A 10 Health
 ```
 
 **Nota**: Após alterações nos labels Traefik, é necessário fazer redeploy completo no Dokploy.
+
+## ⚙️ EspoCRM Configuração Automática
+**Timestamp: 2025-01-24**
+
+### Problema Resolvido
+✅ **Issue**: Redirecionamento infinito para `/install/` por falta de `data/config.php`
+✅ **Solução**: Geração automática de configuração no startup
+
+### Como Funciona
+1. **Template**: `config.template.php` contém configuração base com variáveis de ambiente
+2. **Geração automática**: No startup, se `data/config.php` não existir, é gerado automaticamente
+3. **Variáveis**: Usa `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `SITE_URL` do ambiente
+
+### Configurações Automáticas
+O `config.template.php` gera:
+```php
+<?php
+return array (
+  'database' => array (
+    'driver' => 'pdo_mysql',
+    'host' => getenv('DB_HOST') ?: 'mysql',
+    'port' => getenv('DB_PORT') ?: '3306',
+    'dbname' => getenv('DB_NAME') ?: 'espocrm',
+    'user' => getenv('DB_USER') ?: 'espocrm',
+    'password' => getenv('DB_PASSWORD') ?: 'espocrm123',
+    'charset' => 'utf8mb4',
+  ),
+  'siteUrl' => getenv('SITE_URL') ?: 'https://crm.kwameoilandgas.ao',
+  'isInstalled' => true,
+  'cryptKey' => bin2hex(random_bytes(16)), // Gerado automaticamente
+  'applicationName' => 'Kwame Oil and Gas CRM',
+  'timeZone' => 'Africa/Luanda',
+  'defaultCurrency' => 'AOA',
+  'language' => 'pt_PT',
+  // ... outras configurações
+);
+```
+
+### Personalização da Empresa
+✅ **Nome**: "Kwame Oil and Gas CRM"
+✅ **Timezone**: Africa/Luanda
+✅ **Moeda**: AOA (Kwanza Angolano)
+✅ **Idioma**: Português (pt_PT)
+✅ **Email**: noreply@kwameoilandgas.ao
+
+### Regenerar Configuração
+Se precisares alterar credenciais da base de dados:
+
+```bash
+# Aceder ao container
+docker exec -it espocrm-app bash
+
+# Remover config atual
+rm /var/www/html/data/config.php
+
+# Sair e reiniciar container
+exit
+docker restart espocrm-app
+
+# Verificar logs da regeneração
+docker logs espocrm-app --tail=20
+```
+
+### Debug da Configuração
+```bash
+# Ver se config.php existe
+docker exec espocrm-app ls -la /var/www/html/data/config.php
+
+# Ver conteúdo da configuração (sem passwords)
+docker exec espocrm-app php -r "
+\$config = include('/var/www/html/data/config.php');
+unset(\$config['database']['password']);
+print_r(\$config);
+"
+
+# Testar conexão à base de dados
+docker exec espocrm-app php -r "
+\$config = include('/var/www/html/data/config.php');
+try {
+  \$pdo = new PDO(
+    'mysql:host=' . \$config['database']['host'] . ';dbname=' . \$config['database']['dbname'],
+    \$config['database']['user'],
+    \$config['database']['password']
+  );
+  echo 'Database connection: OK\n';
+} catch (Exception \$e) {
+  echo 'Database connection: FAILED - ' . \$e->getMessage() . '\n';
+}
+"
+```
+
+### Troubleshooting
+1. **Still redirects to /install/**: 
+   - Verificar se `data/config.php` existe e tem `'isInstalled' => true`
+   - Verificar permissões do ficheiro (deve ser 640 www-data:www-data)
+
+2. **Database connection errors**:
+   - Verificar variáveis de ambiente no docker-compose.yml
+   - Testar conexão manual com `mysql -h mysql -u espocrm -p`
+
+3. **Permission errors**:
+   - Verificar ownership: `chown -R www-data:www-data /var/www/html/data`
+   - Verificar permissões: `chmod 775 /var/www/html/data && chmod 640 /var/www/html/data/config.php`
+
+**Nota**: A configuração é gerada automaticamente no primeiro startup. Não requer instalação manual.
