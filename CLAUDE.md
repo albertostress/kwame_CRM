@@ -292,21 +292,20 @@ docker compose down && docker compose up --build
 - ✅ **Healthcheck**: Aguarda MySQL healthy + EspoCRM ready
 
 ## 📑 Nginx Configuration
-**Timestamp: 2025-01-25 - Final Production Configuration**
+**Timestamp: 2025-01-25 - HOTFIX: Root corrected to /var/www/html**
 
 ### Current Configuration 
-✅ **O nginx.conf agora aponta para `/var/www/html/public`**
+✅ **O nginx.conf agora aponta para `/var/www/html`** (raiz do EspoCRM)
 
 ```nginx
 server {
     listen 80;
     server_name _;
-    root /var/www/html/public;  # ✅ EspoCRM public directory
+    root /var/www/html;  # ✅ EspoCRM root directory
     index index.php index.html;
 
-    # Client assets directory alias (EspoCRM frontend)
+    # Client assets directory (EspoCRM frontend)
     location /client/ {
-        alias /var/www/html/client/;
         try_files $uri $uri/ /index.php?$query_string;
         expires 30d;
         add_header Cache-Control "public, immutable";
@@ -321,9 +320,9 @@ server {
 }
 ```
 
-### Mudanças Aplicadas (2025-01-25)
-- ✅ **Root Directory**: O nginx.conf agora aponta para `/var/www/html/public`
-- ✅ **Assets JS/CSS**: Assets JS/CSS do EspoCRM são servidos via `/client/` com alias `/var/www/html/client/`
+### Mudanças Aplicadas (2025-01-25 - HOTFIX)
+- ✅ **Root Directory**: O nginx.conf agora aponta para `/var/www/html` (CORRIGIDO - era public)
+- ✅ **Assets JS/CSS**: Assets JS/CSS do EspoCRM são servidos via `/client/` diretamente
 - ✅ **Try Files**: Cliente agora usa `try_files $uri $uri/ /index.php?$query_string`
 - ✅ **Dockerfile.full**: Mantém `COPY nginx.conf /etc/nginx/nginx.conf`
 - ✅ **Segurança**: Todos blocos de segurança existentes mantidos
@@ -332,7 +331,7 @@ server {
 ⚠️ **Se aparecer tela branca ou sem estilos**, verificar se o container está com o nginx.conf atualizado:
 ```bash
 docker exec -it kwame-crm-app cat /etc/nginx/nginx.conf | grep "root"
-# Deve mostrar: root /var/www/html/public;
+# Deve mostrar: root /var/www/html;
 ```
 
 ### Rebuild Command (Após mudanças)
