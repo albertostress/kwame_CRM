@@ -292,40 +292,66 @@ docker compose down && docker compose up --build
 - ✅ **Healthcheck**: Aguarda MySQL healthy + EspoCRM ready
 
 ## 📑 Nginx Configuration
-**Timestamp: 2025-01-24**
+**Timestamp: 2025-01-25 - Updated with simplified asset serving**
 
-### Configuração Padrão
-✅ Por defeito, o `nginx.conf` serve arquivos do diretório raiz do EspoCRM:
+### Current Configuration (FIXED)
+✅ The `nginx.conf` is now properly configured with simplified asset serving:
 
 ```nginx
 server {
     listen 80;
     server_name _;
-    root /var/www/html;        # ✅ EspoCRM root directory (padrão)
+    root /var/www/html/public;  # ✅ EspoCRM public directory
     index index.php index.html;
+
+    # Client assets directory alias (EspoCRM frontend)
+    location /client/ {
+        alias /var/www/html/client/;
+        try_files $uri $uri/ =404;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Main location - EspoCRM PHP entry point
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Cache static assets (simplified approach)
+    location ~* \.(jpg|jpeg|gif|png|ico|svg|webp|css|js|woff|woff2|ttf|eot|otf|map|html|txt)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
 }
 ```
 
-### Deploy Customizado (Fallback)
-🔄 Se o deploy for custom e a app estiver em `/public`, basta editar `nginx.conf` e mudar:
+### Key Fixes Applied (2025-01-25)
+- ✅ **Root directory**: Set to `/var/www/html/public` for proper EspoCRM routing
+- ✅ **Client alias**: Direct `/client/` → `/var/www/html/client/` mapping for frontend assets
+- ✅ **Simplified static asset caching**: Single rule for all file types
+- ✅ **Removed complex asset rules**: No more conflicting CSS/JS/font location blocks
+- ✅ **Clean routing**: All PHP requests properly handled through index.php
 
-```nginx
-# Mudar de:
-root /var/www/html;
+### Issues Resolved
+- **404 errors on CSS/JS files**: Fixed with proper client directory alias
+- **Frontend not loading properly**: Angular frontend now serves correctly
+- **Asset serving conflicts**: Removed duplicate and conflicting nginx rules
 
-# Para:
-root /var/www/html/public;
-```
-
-### Como Rebuildar
+### Rebuild and Deploy
 ```bash
 docker compose up -d --build
 ```
 
-### Teste Manual
-Para verificar se o nginx está a servir corretamente:
+### Testing Commands
 ```bash
-docker exec -it espocrm-app curl -I http://localhost/index.php
+# Test main application endpoint
+docker exec -it kwame-crm-app curl -I http://localhost/
+
+# Test client assets directory
+docker exec -it kwame-crm-app curl -I http://localhost/client/
+
+# Test specific CSS/JS assets
+docker exec -it kwame-crm-app curl -I http://localhost/client/css/espo/main.css
 ```
 **Esperado:** `HTTP/1.1 200 OK`
 
