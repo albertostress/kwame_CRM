@@ -291,37 +291,54 @@ docker compose down && docker compose up --build
 - ✅ **Domain mapping**: Container port 8080 → https://crm.kwameoilandgas.ao
 - ✅ **Healthcheck**: Aguarda MySQL healthy + EspoCRM ready
 
-## 📑 Nginx Root Update
+## 📑 Nginx Configuration
 **Timestamp: 2025-01-24**
 
-### Configuração Atualizada
-O `nginx.conf` foi atualizado para apontar para o diretório público correto do EspoCRM:
+### Configuração Padrão
+✅ Por defeito, o `nginx.conf` serve arquivos do diretório raiz do EspoCRM:
 
 ```nginx
 server {
     listen 80;
-    server_name localhost;
-    root /var/www/html/public;  # ✅ Atualizado de /var/www/html
+    server_name _;
+    root /var/www/html;        # ✅ EspoCRM root directory (padrão)
     index index.php index.html;
 }
 ```
 
-### Benefícios
-- ✅ **Resolve erro 404**: "Page not found" é corrigido
-- ✅ **Estrutura correta**: EspoCRM espera servir do diretório `/public`
-- ✅ **Segurança melhorada**: Não expõe arquivos de configuração no root
-- ✅ **Padrão EspoCRM**: Segue a estrutura oficial do projeto
+### Deploy Customizado (Fallback)
+🔄 Se o deploy for custom e a app estiver em `/public`, basta editar `nginx.conf` e mudar:
 
-### Redeploy no Dokploy
-Após esta alteração, execute:
+```nginx
+# Mudar de:
+root /var/www/html;
+
+# Para:
+root /var/www/html/public;
+```
+
+### Como Rebuildar
 ```bash
 docker compose up -d --build
 ```
 
-### Reverter (se necessário)
-Para reverter para o diretório anterior:
-```nginx
-root /var/www/html;  # Configuração anterior
+### Teste Manual
+Para verificar se o nginx está a servir corretamente:
+```bash
+docker exec -it espocrm-app curl -I http://localhost/index.php
 ```
+**Esperado:** `HTTP/1.1 200 OK`
 
-**Nota**: Esta alteração só afeta o Nginx. PHP, MySQL e Supervisor permanecem inalterados.
+### FastCGI Configuration
+O nginx está configurado para processar PHP via PHP-FPM na porta 9000:
+- FastCGI pass: `127.0.0.1:9000`
+- Timeout de leitura: 180s
+- Buffer otimizado para aplicações PHP
+
+### Segurança
+As regras de segurança permanecem ativas:
+- Nega acesso a `/data`, `/application`, `/custom`, `/vendor`, etc.
+- Nega arquivos `.json`, `.lock`, `.tpl`, `.md`, `.sh`, `.sql`
+- Headers de segurança: X-Frame-Options, X-Content-Type-Options, etc.
+
+**Nota**: O `Dockerfile.full` copia automaticamente a versão atualizada do `nginx.conf`.
