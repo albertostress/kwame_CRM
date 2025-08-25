@@ -19,13 +19,14 @@ services:
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
     environment:
+      # Clean installation - no pre-configuration
       - SITE_URL=${SITE_URL:-https://crm.kwameoilandgas.ao}
       - DB_HOST=${DB_HOST:-mysql}
       - DB_PORT=${DB_PORT:-3306}
       - DB_NAME=${DB_NAME:-espocrm}
       - DB_USER=${DB_USER:-espocrm}
-      - DB_PASSWORD=${DB_PASSWORD:-espocrm123}
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root123}
+      - DB_PASSWORD=${DB_PASSWORD:-KwameOil2025Secure!}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-RootKwame2025!}
     volumes:
       - espocrm_data:/var/www/html/data
       - espocrm_custom:/var/www/html/custom
@@ -47,10 +48,10 @@ services:
     container_name: kwame-crm-mysql
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root123}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-RootKwame2025!}
       - MYSQL_DATABASE=${DB_NAME:-espocrm}
       - MYSQL_USER=${DB_USER:-espocrm}
-      - MYSQL_PASSWORD=${DB_PASSWORD:-espocrm123}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-KwameOil2025Secure!}
       - MYSQL_ALLOW_EMPTY_PASSWORD=no
       - MYSQL_RANDOM_ROOT_PASSWORD=no
     volumes:
