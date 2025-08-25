@@ -86,10 +86,27 @@ RUN echo '#!/bin/bash' > /start.sh \
     && echo '  echo "📌 DB_HOST not set or is localhost, skipping MySQL wait"' >> /start.sh \
     && echo 'fi' >> /start.sh \
     && echo '' >> /start.sh \
+    && echo '# Ensure data directories exist with correct permissions' >> /start.sh \
+    && echo 'echo "🔧 Checking and fixing data directory permissions..."' >> /start.sh \
+    && echo 'mkdir -p /var/www/html/data/cache' >> /start.sh \
+    && echo 'mkdir -p /var/www/html/data/logs' >> /start.sh \
+    && echo 'mkdir -p /var/www/html/data/upload' >> /start.sh \
+    && echo 'mkdir -p /var/www/html/data/tmp' >> /start.sh \
+    && echo 'mkdir -p /var/www/html/custom/Espo/Custom' >> /start.sh \
+    && echo 'mkdir -p /var/www/html/client/custom' >> /start.sh \
+    && echo '' >> /start.sh \
+    && echo '# Fix ownership and permissions for all data directories' >> /start.sh \
+    && echo 'chown -R www-data:www-data /var/www/html/data' >> /start.sh \
+    && echo 'chown -R www-data:www-data /var/www/html/custom' >> /start.sh \
+    && echo 'chown -R www-data:www-data /var/www/html/client/custom' >> /start.sh \
+    && echo 'chmod -R 775 /var/www/html/data' >> /start.sh \
+    && echo 'chmod -R 775 /var/www/html/custom' >> /start.sh \
+    && echo 'chmod -R 775 /var/www/html/client/custom' >> /start.sh \
+    && echo 'echo "✅ Permissions fixed for data directories"' >> /start.sh \
+    && echo '' >> /start.sh \
     && echo '# Generate config.php from template if not exists' >> /start.sh \
     && echo 'if [ ! -f /var/www/html/data/config.php ]; then' >> /start.sh \
     && echo '  echo "⚙️ Generating EspoCRM config.php from template..."' >> /start.sh \
-    && echo '  mkdir -p /var/www/html/data' >> /start.sh \
     && echo '  php -r "include \"/var/www/html/config.template.php\"; file_put_contents(\"/var/www/html/data/config.php\", \"<?php\\n\" . \"return \" . var_export(include(\"/var/www/html/config.template.php\"), true) . \";\");"' >> /start.sh \
     && echo '  chown www-data:www-data /var/www/html/data/config.php' >> /start.sh \
     && echo '  chmod 640 /var/www/html/data/config.php' >> /start.sh \

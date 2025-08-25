@@ -597,3 +597,149 @@ docker inspect espocrm-app | grep -A 5 Health
    - Container deve estar na rede `dokploy-network`
 
 **Nota**: Todas as referências antigas à porta 8080 foram removidas para consistência.
+
+## 🔐 Gestão de Permissões e Persistência
+**Timestamp: 2025-01-24**
+
+### Correção Automática de Permissões
+✅ **Startup Script**: O container corrige automaticamente permissões em cada startup
+
+**Diretórios criados e corrigidos automaticamente:**
+```bash
+/var/www/html/data/          # 775 www-data:www-data
+├── cache/                   # Cache da aplicação
+├── logs/                    # Logs do EspoCRM
+├── upload/                  # Ficheiros carregados
+└── tmp/                     # Temporários
+
+/var/www/html/custom/        # 775 www-data:www-data
+└── Espo/Custom/             # Customizações
+
+/var/www/html/client/custom/ # 775 www-data:www-data
+```
+
+### Volumes Persistentes
+O docker-compose.yml usa volumes nomeados para persistência:
+```yaml
+volumes:
+  espocrm_data:    # /var/www/html/data - configs, uploads, logs
+  espocrm_custom:  # /var/www/html/custom - customizações
+  mysql_data:      # /var/lib/mysql - base de dados
+```
+
+### Testar Permissões
+```bash
+# Verificar ownership dos diretórios
+docker exec espocrm-app ls -la /var/www/html/data/
+
+# Testar escrita em logs
+docker exec espocrm-app touch /var/www/html/data/logs/test.log
+docker exec espocrm-app rm /var/www/html/data/logs/test.log
+
+# Verificar user www-data
+docker exec espocrm-app id www-data
+
+# Ver processos rodando como www-data
+docker exec espocrm-app ps aux | grep www-data
+```
+
+### Resolver "Permission Denied"
+Se aparecer erro de permissões:
+
+#### 1. Forçar correção manual:
+```bash
+# Entrar no container
+docker exec -it espocrm-app bash
+
+# Corrigir permissões manualmente
+chown -R www-data:www-data /var/www/html/data
+chown -R www-data:www-data /var/www/html/custom
+chmod -R 775 /var/www/html/data
+chmod -R 775 /var/www/html/custom
+
+# Sair e reiniciar
+exit
+docker restart espocrm-app
+```
+
+#### 2. Verificar logs de erro:
+```bash
+# Ver logs do PHP-FPM
+docker exec espocrm-app tail -f /var/log/php-fpm.log
+
+# Ver logs do EspoCRM
+docker exec espocrm-app tail -f /var/www/html/data/logs/espo.log
+
+# Ver logs do container
+docker logs espocrm-app --tail=50
+```
+
+#### 3. Debug de permissões específicas:
+```bash
+# Verificar permissão de um ficheiro específico
+docker exec espocrm-app stat /var/www/html/data/config.php
+
+# Listar todos os ficheiros com problemas de permissão
+docker exec espocrm-app find /var/www/html/data -not -user www-data
+
+# Verificar espaço em disco
+docker exec espocrm-app df -h /var/www/html/data
+```
+
+### Troubleshooting Comum
+
+#### "Could not write to cache"
+```bash
+# Limpar e recriar cache
+docker exec espocrm-app rm -rf /var/www/html/data/cache/*
+docker exec espocrm-app php /var/www/html/clear_cache.php
+```
+
+#### "Failed to open log file"
+```bash
+# Verificar e criar diretório de logs
+docker exec espocrm-app mkdir -p /var/www/html/data/logs
+docker exec espocrm-app chown www-data:www-data /var/www/html/data/logs
+docker exec espocrm-app chmod 775 /var/www/html/data/logs
+```
+
+#### "Upload failed"
+```bash
+# Verificar diretório de upload
+docker exec espocrm-app ls -la /var/www/html/data/upload/
+docker exec espocrm-app chown -R www-data:www-data /var/www/html/data/upload
+docker exec espocrm-app chmod -R 775 /var/www/html/data/upload
+```
+
+### Backup e Restore de Volumes
+```bash
+# Backup do volume de dados
+docker run --rm -v espocrm_data:/data -v $(pwd):/backup alpine tar czf /backup/espocrm_data_backup.tar.gz -C /data .
+
+# Restore do volume
+docker run --rm -v espocrm_data:/data -v $(pwd):/backup alpine tar xzf /backup/espocrm_data_backup.tar.gz -C /data
+
+# Listar volumes
+docker volume ls | grep espocrm
+
+# Inspecionar volume
+docker volume inspect espocrm_data
+```
+
+### Permissões no Dokploy
+No ambiente Dokploy, os volumes são geridos automaticamente. Se houver problemas:
+
+1. **Via interface Dokploy**: 
+   - Aceder aos logs do container
+   - Executar comando: `chown -R www-data:www-data /var/www/html/data`
+
+2. **Via SSH no VPS**:
+```bash
+# Encontrar o container
+docker ps | grep espocrm
+
+# Executar correção
+docker exec <container_id> chown -R www-data:www-data /var/www/html/data
+```
+
+**Nota**: As permissões são corrigidas automaticamente no startup, mas podem ser necessárias correções manuais após updates ou migrações.
