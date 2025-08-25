@@ -292,51 +292,78 @@ docker compose down && docker compose up --build
 - ✅ **Healthcheck**: Aguarda MySQL healthy + EspoCRM ready
 
 ## 📑 Nginx Configuration
-**Timestamp: 2025-01-25 - FINAL FIX: Correct locations for installer and client**
+**Timestamp: 2025-01-25 - ATOMIC UPDATE: Complete nginx configuration replacement**
 
-### Current Configuration 
-✅ **O nginx.conf tem as seguintes configurações críticas:**
+### ATOMIC CONFIGURATION REPLACEMENT
+✅ **nginx.conf foi completamente substituído por configuração otimizada e estável:**
 
 ```nginx
 server {
     listen 80;
     server_name _;
-    root /var/www/html/public;  # ✅ EspoCRM public directory (CORRECT)
+    root /var/www/html/public;  # ✅ EspoCRM public directory
     index index.php index.html;
 
-    # Main location - EspoCRM PHP entry point
+    # Main app - simplified routing
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
-    # Client assets directory with alias and fallback
+    # Client assets - optimized with proper caching
     location /client/ {
         alias /var/www/html/client/;
-        autoindex off;
-        try_files $uri $uri/ /index.php?$query_string;
-        
-        location ~* ^.+\.(js|css|png|jpg|svg|svgz|jpeg|gif|ico|tpl)$ {
+        index index.html;
+        try_files $uri $uri/ =404;
+
+        location ~* \.(?:js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {
+            expires 30d;
             access_log off;
-            expires max;
+            add_header Cache-Control "public, immutable";
         }
     }
 
-    # Install directory with fallback (prevents blank screen)
+    # Install wizard - proper root and index handling
     location /install/ {
-        try_files $uri $uri/ /index.php?$query_string;
+        root /var/www/html/;
+        index index.php;
+        try_files $uri $uri/ /install/index.php?$query_string;
     }
 
-    # [Outros blocos mantidos: API, Portal, PHP, Security, Cache]
+    # API - simplified routing
+    location /api/v1/ {
+        try_files $uri $uri/ /api/v1/index.php?$query_string;
+    }
+
+    # Portal - consistent routing
+    location /portal/ {
+        try_files $uri $uri/ /portal/index.php?$query_string;
+    }
+
+    # PHP - optimized FastCGI configuration
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_read_timeout 180;
+        fastcgi_buffer_size 128k;
+        fastcgi_buffers 256 16k;
+    }
+
+    # Security blocks maintained
+    location ~ /\.ht { deny all; }
+    location ~ /(data|application|custom|vendor|bin|tests|dev|upgrades)/ { deny all; }
 }
 ```
 
-### Mudanças Aplicadas (2025-01-25 - FINAL)
-- ✅ **Root Directory**: Mantido `/var/www/html/public` (DEFINITIVO)
-- ✅ **Client Directory**: Mudado para `alias /var/www/html/client/` com fallback
-- ✅ **Install Directory**: Adicionado bloco específico `/install/` com fallback
-- ✅ **Fallbacks**: Todos locations usam `try_files $uri $uri/ /index.php?$query_string`
-- ✅ **Dockerfile.full**: Já copia `nginx.conf` automaticamente
-- ✅ **Segurança**: Todos blocos de segurança existentes mantidos
+### ATOMIC CHANGES APPLIED (2025-01-25)
+- 🔄 **COMPLETE REPLACEMENT**: nginx.conf totalmente substituído
+- ✅ **Client Assets**: Otimizado com `=404` fallback e cache melhorado
+- ✅ **Install Wizard**: Configuração correta com `root /var/www/html/`
+- ✅ **API Routing**: Simplificado sem regras complexas `if`
+- ✅ **Asset Caching**: 30 dias com headers `Cache-Control`
+- ✅ **Security**: Mantidos todos os blocos de segurança
+- ✅ **FastCGI**: Parâmetros otimizados e organizados
 
 ### IMPORTANTE - Estrutura de Arquivos
 ```
@@ -352,45 +379,44 @@ server {
 └── data/              # Cache, configs, uploads
 ```
 
-### Troubleshooting
-⚠️ **Se aparecer tela branca ou sem estilos**, verificar se o container está com o nginx.conf atualizado:
-```bash
-docker exec -it kwame-crm-app cat /etc/nginx/nginx.conf | grep "root"
-# Deve mostrar: root /var/www/html/public;
-
-docker exec -it kwame-crm-app cat /etc/nginx/nginx.conf | grep -A3 "location /install/"
-# Deve mostrar o bloco /install/ com fallback
-
-docker exec -it kwame-crm-app cat /etc/nginx/nginx.conf | grep -A3 "location /client/"
-# Deve mostrar alias /var/www/html/client/ com fallback
+### DOCKERFILE.FULL VERIFICATION
+✅ **Dockerfile.full já estava configurado corretamente:**
+```dockerfile
+# Copy nginx and supervisor configurations
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 ```
+- **Linha 67**: nginx.conf é copiado automaticamente para `/etc/nginx/nginx.conf`
+- **Funcionamento**: Container sempre usa a versão atualizada do nginx.conf
 
-### Rebuild Command (Após mudanças)
+### ATOMIC DEPLOYMENT COMMANDS
 ```bash
-docker-compose build --no-cache kwame-crm-app
+# Rebuild com nova configuração
+docker-compose build --no-cache espocrm
 docker-compose up -d
-```
 
-### Rebuild and Deploy
-```bash
+# Ou rebuild direto
 docker compose up -d --build
 ```
 
-### Testing Commands
+### VALIDATION COMMANDS
 ```bash
-# Test main application endpoint
+# Verificar nginx.conf no container
+docker exec -it kwame-crm-app cat /etc/nginx/nginx.conf | head -10
+
+# Testar configuração nginx
+docker exec -it kwame-crm-app nginx -t
+
+# Test all critical endpoints
 docker exec -it kwame-crm-app curl -I http://localhost/
-
-# Test install directory (critical for wizard)
 docker exec -it kwame-crm-app curl -I http://localhost/install/
-
-# Test client assets directory
 docker exec -it kwame-crm-app curl -I http://localhost/client/
+docker exec -it kwame-crm-app curl -I http://localhost/api/v1/
 
-# Test specific CSS/JS assets
+# Test asset caching
 docker exec -it kwame-crm-app curl -I http://localhost/client/css/espo/main.css
 ```
-**Esperado:** `HTTP/1.1 200 OK` para todos os endpoints
+**Esperado:** `HTTP/1.1 200 OK` para todos os endpoints, com headers de cache para assets
 
 ### Debug Commands
 ```bash
