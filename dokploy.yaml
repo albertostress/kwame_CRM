@@ -10,7 +10,7 @@ build:
 # Environment configuration
 env:
   # Application settings
-  APP_PORT: 8080
+  APP_PORT: 80
   SITE_URL: https://crm.kwameoilandgas.ao
   
   # Database configuration
@@ -38,7 +38,7 @@ services:
       - "traefik.http.routers.espocrm.rule=Host(`crm.kwameoilandgas.ao`)"
       - "traefik.http.routers.espocrm.entrypoints=websecure"
       - "traefik.http.routers.espocrm.tls.certresolver=myresolver"
-      - "traefik.http.services.espocrm.loadbalancer.server.port=8080"
+      - "traefik.http.services.espocrm.loadbalancer.server.port=80"
       - "traefik.http.routers.espocrm-http.rule=Host(`crm.kwameoilandgas.ao`)"
       - "traefik.http.routers.espocrm-http.entrypoints=web"
       - "traefik.http.routers.espocrm-http.middlewares=redirect-to-https"
@@ -49,7 +49,7 @@ services:
 domains:
   - domain: crm.kwameoilandgas.ao
     ssl: true
-    port: 8080
+    port: 80
 
 # Health check
 healthcheck:

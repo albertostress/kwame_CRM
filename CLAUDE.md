@@ -543,3 +543,57 @@ try {
    - Verificar permissões: `chmod 775 /var/www/html/data && chmod 640 /var/www/html/data/config.php`
 
 **Nota**: A configuração é gerada automaticamente no primeiro startup. Não requer instalação manual.
+
+## 🔌 Porta de Exposição Padronizada
+**Timestamp: 2025-01-24**
+
+### Padronização para Porta 80
+✅ **Consistência**: Todos os componentes agora usam porta **80**
+- **Nginx**: `listen 80;` (já estava correcto)
+- **Container**: `EXPOSE 80` (era 8080)
+- **Healthcheck**: `curl http://localhost:80/` 
+- **Traefik**: `loadbalancer.server.port=80`
+- **docker-compose.yml**: `expose: ["80"]`
+
+### Como Funciona
+- **Interno**: EspoCRM roda na **porta 80** dentro do container
+- **Externo**: Dokploy/Traefik faz roteamento via domínio configurado (`SITE_URL`)
+- **Acesso**: `https://crm.kwameoilandgas.ao` → Traefik → Container:80
+
+### Debug Local
+Se quiseres expor manualmente para debug local:
+```bash
+# Expor porta 80 do container para 8080 do host
+docker compose up -d
+docker run -p 8080:80 espocrm-app
+
+# Testar directamente
+curl -I http://localhost:8080/index.php
+```
+
+### Verificações de Porta
+```bash
+# Ver que porta o container expõe
+docker ps --format "table {{.Names}}\t{{.Ports}}"
+
+# Testar healthcheck interno
+docker exec espocrm-app curl -I http://localhost:80/
+
+# Ver logs de healthcheck
+docker inspect espocrm-app | grep -A 5 Health
+```
+
+### Troubleshooting de Porta
+1. **Connection refused**: Container não está a responder na porta 80
+   - Verificar nginx está a fazer `listen 80;`
+   - Testar: `docker exec espocrm-app netstat -tlnp | grep :80`
+
+2. **Healthcheck failing**: Curl não consegue conectar
+   - Verificar se nginx está running: `docker exec espocrm-app ps aux | grep nginx`
+   - Testar endpoint manualmente: `docker exec espocrm-app curl -v http://localhost:80/`
+
+3. **502 Bad Gateway**: Traefik não consegue proxy
+   - Verificar label: `traefik.http.services.espocrm.loadbalancer.server.port=80`
+   - Container deve estar na rede `dokploy-network`
+
+**Nota**: Todas as referências antigas à porta 8080 foram removidas para consistência.

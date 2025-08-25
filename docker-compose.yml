@@ -6,13 +6,13 @@ services:
     container_name: espocrm-app
     restart: unless-stopped
     expose:
-      - "8080"
+      - "80"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.espocrm.rule=Host(`crm.kwameoilandgas.ao`)"
       - "traefik.http.routers.espocrm.entrypoints=websecure"
       - "traefik.http.routers.espocrm.tls.certresolver=myresolver"
-      - "traefik.http.services.espocrm.loadbalancer.server.port=8080"
+      - "traefik.http.services.espocrm.loadbalancer.server.port=80"
       - "traefik.http.routers.espocrm-http.rule=Host(`crm.kwameoilandgas.ao`)"
       - "traefik.http.routers.espocrm-http.entrypoints=web"
       - "traefik.http.routers.espocrm-http.middlewares=redirect-to-https"
@@ -35,7 +35,7 @@ services:
     networks:
       - dokploy-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
       interval: 30s
       timeout: 15s
       retries: 5
