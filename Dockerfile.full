@@ -86,6 +86,20 @@ RUN echo '#!/bin/bash' > /start.sh \
     && echo '  echo "📌 DB_HOST not set or is localhost, skipping MySQL wait"' >> /start.sh \
     && echo 'fi' >> /start.sh \
     && echo '' >> /start.sh \
+    && echo '# Debug: Check if files are in place' >> /start.sh \
+    && echo 'echo "📂 Checking file structure..."' >> /start.sh \
+    && echo 'if [ -f /var/www/html/public/index.php ]; then' >> /start.sh \
+    && echo '  echo "✅ public/index.php found"' >> /start.sh \
+    && echo 'else' >> /start.sh \
+    && echo '  echo "❌ ERROR: public/index.php NOT found!"' >> /start.sh \
+    && echo '  ls -la /var/www/html/' >> /start.sh \
+    && echo 'fi' >> /start.sh \
+    && echo 'if [ -d /var/www/html/client ]; then' >> /start.sh \
+    && echo '  echo "✅ client directory found"' >> /start.sh \
+    && echo 'else' >> /start.sh \
+    && echo '  echo "❌ ERROR: client directory NOT found!"' >> /start.sh \
+    && echo 'fi' >> /start.sh \
+    && echo '' >> /start.sh \
     && echo '# Ensure data directories exist with correct permissions' >> /start.sh \
     && echo 'echo "🔧 Checking and fixing data directory permissions..."' >> /start.sh \
     && echo 'mkdir -p /var/www/html/data/cache' >> /start.sh \
