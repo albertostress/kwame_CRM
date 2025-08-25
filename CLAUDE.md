@@ -292,10 +292,10 @@ docker compose down && docker compose up --build
 - ✅ **Healthcheck**: Aguarda MySQL healthy + EspoCRM ready
 
 ## 📑 Nginx Configuration
-**Timestamp: 2025-01-25 - FINAL FIX: Root must be /var/www/html/public**
+**Timestamp: 2025-01-25 - FINAL FIX: Correct locations for installer and client**
 
 ### Current Configuration 
-✅ **O nginx.conf DEVE apontar para `/var/www/html/public`** (main EspoCRM entry point)
+✅ **O nginx.conf tem as seguintes configurações críticas:**
 
 ```nginx
 server {
@@ -304,15 +304,25 @@ server {
     root /var/www/html/public;  # ✅ EspoCRM public directory (CORRECT)
     index index.php index.html;
 
-    # Client assets directory (EspoCRM frontend)
-    location /client/ {
-        try_files $uri $uri/ /index.php?$query_string;
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-    }
-
     # Main location - EspoCRM PHP entry point
     location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Client assets directory with alias and fallback
+    location /client/ {
+        alias /var/www/html/client/;
+        autoindex off;
+        try_files $uri $uri/ /index.php?$query_string;
+        
+        location ~* ^.+\.(js|css|png|jpg|svg|svgz|jpeg|gif|ico|tpl)$ {
+            access_log off;
+            expires max;
+        }
+    }
+
+    # Install directory with fallback (prevents blank screen)
+    location /install/ {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
@@ -321,10 +331,11 @@ server {
 ```
 
 ### Mudanças Aplicadas (2025-01-25 - FINAL)
-- ✅ **Root Directory**: O nginx.conf agora aponta para `/var/www/html/public` (DEFINITIVO)
-- ✅ **Assets JS/CSS**: Assets JS/CSS do EspoCRM são servidos via `/client/` diretamente
-- ✅ **Try Files**: Cliente agora usa `try_files $uri $uri/ /index.php?$query_string`
-- ✅ **Dockerfile.full**: Mantém `COPY nginx.conf /etc/nginx/nginx.conf`
+- ✅ **Root Directory**: Mantido `/var/www/html/public` (DEFINITIVO)
+- ✅ **Client Directory**: Mudado para `alias /var/www/html/client/` com fallback
+- ✅ **Install Directory**: Adicionado bloco específico `/install/` com fallback
+- ✅ **Fallbacks**: Todos locations usam `try_files $uri $uri/ /index.php?$query_string`
+- ✅ **Dockerfile.full**: Já copia `nginx.conf` automaticamente
 - ✅ **Segurança**: Todos blocos de segurança existentes mantidos
 
 ### IMPORTANTE - Estrutura de Arquivos
@@ -346,6 +357,12 @@ server {
 ```bash
 docker exec -it kwame-crm-app cat /etc/nginx/nginx.conf | grep "root"
 # Deve mostrar: root /var/www/html/public;
+
+docker exec -it kwame-crm-app cat /etc/nginx/nginx.conf | grep -A3 "location /install/"
+# Deve mostrar o bloco /install/ com fallback
+
+docker exec -it kwame-crm-app cat /etc/nginx/nginx.conf | grep -A3 "location /client/"
+# Deve mostrar alias /var/www/html/client/ com fallback
 ```
 
 ### Rebuild Command (Após mudanças)
@@ -364,13 +381,28 @@ docker compose up -d --build
 # Test main application endpoint
 docker exec -it kwame-crm-app curl -I http://localhost/
 
+# Test install directory (critical for wizard)
+docker exec -it kwame-crm-app curl -I http://localhost/install/
+
 # Test client assets directory
 docker exec -it kwame-crm-app curl -I http://localhost/client/
 
 # Test specific CSS/JS assets
 docker exec -it kwame-crm-app curl -I http://localhost/client/css/espo/main.css
 ```
-**Esperado:** `HTTP/1.1 200 OK`
+**Esperado:** `HTTP/1.1 200 OK` para todos os endpoints
+
+### Debug Commands
+```bash
+# Check PHP error logs if blank screen occurs
+docker logs kwame-crm-app | grep -i php
+
+# Check nginx error logs
+docker exec -it kwame-crm-app tail -f /var/log/nginx/error.log
+
+# Test specific install path
+docker exec -it kwame-crm-app curl -v http://localhost/install/index.php
+```
 
 ### FastCGI Configuration
 O nginx está configurado para processar PHP via PHP-FPM na porta 9000:
