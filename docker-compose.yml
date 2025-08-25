@@ -29,6 +29,7 @@ services:
     volumes:
       - espocrm_data:/var/www/html/data
       - espocrm_custom:/var/www/html/custom
+      - espocrm_uploads:/var/www/html/data/upload
     depends_on:
       mysql:
         condition: service_healthy
@@ -78,6 +79,8 @@ volumes:
   espocrm_data:
     driver: local
   espocrm_custom:
+    driver: local
+  espocrm_uploads:
     driver: local
 
 networks:

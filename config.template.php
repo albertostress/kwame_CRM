@@ -10,7 +10,7 @@ return array (
     'password' => getenv('DB_PASSWORD') ?: 'espocrm123',
     'charset' => 'utf8mb4',
   ),
-  'siteUrl' => getenv('SITE_URL') ?: 'http://localhost:8080',
+  'siteUrl' => getenv('SITE_URL') ?: 'https://crm.kwameoilandgas.ao',
   'isInstalled' => true,
   'cryptKey' => bin2hex(random_bytes(16)),
   'passwordSalt' => bin2hex(random_bytes(16)),
