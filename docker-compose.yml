@@ -7,6 +7,17 @@ services:
     restart: unless-stopped
     expose:
       - "8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.espocrm.rule=Host(`crm.kwameoilandgas.ao`)"
+      - "traefik.http.routers.espocrm.entrypoints=websecure"
+      - "traefik.http.routers.espocrm.tls.certresolver=myresolver"
+      - "traefik.http.services.espocrm.loadbalancer.server.port=8080"
+      - "traefik.http.routers.espocrm-http.rule=Host(`crm.kwameoilandgas.ao`)"
+      - "traefik.http.routers.espocrm-http.entrypoints=web"
+      - "traefik.http.routers.espocrm-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
     environment:
       - SITE_URL=${SITE_URL:-https://crm.kwameoilandgas.ao}
       - DB_HOST=${DB_HOST:-mysql}

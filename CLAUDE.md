@@ -342,3 +342,99 @@ As regras de segurança permanecem ativas:
 - Headers de segurança: X-Frame-Options, X-Content-Type-Options, etc.
 
 **Nota**: O `Dockerfile.full` copia automaticamente a versão atualizada do `nginx.conf`.
+
+## 🚦 Traefik Routing & Debug no Dokploy
+**Timestamp: 2025-01-24**
+
+### Configuração Traefik
+✅ **Labels configurados** no `docker-compose.yml` e `dokploy.yaml`:
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.espocrm.rule=Host(`crm.kwameoilandgas.ao`)"
+  - "traefik.http.routers.espocrm.entrypoints=websecure"
+  - "traefik.http.routers.espocrm.tls.certresolver=myresolver"
+  - "traefik.http.services.espocrm.loadbalancer.server.port=8080"
+  # HTTP to HTTPS redirect
+  - "traefik.http.routers.espocrm-http.rule=Host(`crm.kwameoilandgas.ao`)"
+  - "traefik.http.routers.espocrm-http.entrypoints=web"
+  - "traefik.http.routers.espocrm-http.middlewares=redirect-to-https"
+  - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+  - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+```
+
+### Debug do Traefik
+Para verificar se o Traefik está a rotear correctamente:
+
+```bash
+# Ver logs do Traefik (últimas 50 linhas)
+docker logs dokploy-traefik --tail=50
+
+# Ver logs em tempo real
+docker logs dokploy-traefik -f
+
+# Verificar configuração do Traefik
+docker exec dokploy-traefik traefik config
+```
+
+### Teste Local de Routing
+```bash
+# Testar se domínio está a responder
+curl -I -H "Host: crm.kwameoilandgas.ao" http://127.0.0.1
+
+# Testar HTTPS (se certificado estiver configurado)
+curl -I -H "Host: crm.kwameoilandgas.ao" https://127.0.0.1 -k
+
+# Testar directo ao container
+curl -I http://container-ip:8080/index.php
+```
+
+### Redeploy no Dokploy
+Para forçar um redeploy completo:
+
+```bash
+# Via CLI (se disponível)
+dokploy redeploy crm2025-kwamecrm-xuacgh
+
+# Via interface web do Dokploy
+# 1. Aceder ao painel Dokploy
+# 2. Seleccionar o projeto "kwame-crm"
+# 3. Clicar "Redeploy" ou "Build & Deploy"
+```
+
+### Verificações de Rede
+```bash
+# Verificar se container está na rede dokploy-network
+docker network inspect dokploy-network
+
+# Ver todos os containers da rede
+docker network ls | grep dokploy
+
+# Testar conectividade entre containers
+docker exec espocrm-app ping dokploy-traefik
+```
+
+### Troubleshooting Comum
+1. **502 Bad Gateway**: Container não responde na porta 8080
+   - Verificar: `docker logs espocrm-app`
+   - Testar: `curl -I http://container-ip:8080`
+
+2. **404 Not Found**: Routing não configurado
+   - Verificar labels Traefik no container
+   - Confirmar domínio DNS aponta para o VPS
+
+3. **Certificate Error**: SSL não configurado
+   - Verificar `certresolver=myresolver`
+   - Aguardar geração de certificado (pode demorar)
+
+### Container Health Check
+```bash
+# Verificar saúde dos containers
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Ver detalhes do healthcheck
+docker inspect espocrm-app | grep -A 10 Health
+```
+
+**Nota**: Após alterações nos labels Traefik, é necessário fazer redeploy completo no Dokploy.

@@ -5,13 +5,13 @@ type: docker-compose
 # Build configuration
 build:
   context: .
-  dockerfile: Dockerfile.fast
+  dockerfile: Dockerfile.full
 
 # Environment configuration
 env:
   # Application settings
-  APP_PORT: 80
-  SITE_URL: ${DOKPLOY_URL}
+  APP_PORT: 8080
+  SITE_URL: https://crm.kwameoilandgas.ao
   
   # Database configuration
   DB_HOST: mysql
@@ -30,11 +30,26 @@ env:
   PHP_MAX_EXECUTION_TIME: 180
   PHP_UPLOAD_MAX_SIZE: 50M
 
+# Traefik routing configuration
+services:
+  espocrm:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.espocrm.rule=Host(`crm.kwameoilandgas.ao`)"
+      - "traefik.http.routers.espocrm.entrypoints=websecure"
+      - "traefik.http.routers.espocrm.tls.certresolver=myresolver"
+      - "traefik.http.services.espocrm.loadbalancer.server.port=8080"
+      - "traefik.http.routers.espocrm-http.rule=Host(`crm.kwameoilandgas.ao`)"
+      - "traefik.http.routers.espocrm-http.entrypoints=web"
+      - "traefik.http.routers.espocrm-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
 # Domains configuration
 domains:
-  - domain: ${DOKPLOY_DOMAIN}
+  - domain: crm.kwameoilandgas.ao
     ssl: true
-    port: 80
+    port: 8080
 
 # Health check
 healthcheck:
