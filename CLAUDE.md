@@ -292,10 +292,10 @@ docker compose down && docker compose up --build
 - ✅ **Healthcheck**: Aguarda MySQL healthy + EspoCRM ready
 
 ## 📑 Nginx Configuration
-**Timestamp: 2025-01-25 - Updated with simplified asset serving**
+**Timestamp: 2025-01-25 - Final Production Configuration**
 
-### Current Configuration (FIXED)
-✅ The `nginx.conf` is now properly configured with simplified asset serving:
+### Current Configuration 
+✅ **O nginx.conf agora aponta para `/var/www/html/public`**
 
 ```nginx
 server {
@@ -307,7 +307,7 @@ server {
     # Client assets directory alias (EspoCRM frontend)
     location /client/ {
         alias /var/www/html/client/;
-        try_files $uri $uri/ =404;
+        try_files $uri $uri/ /index.php?$query_string;
         expires 30d;
         add_header Cache-Control "public, immutable";
     }
@@ -317,25 +317,29 @@ server {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
-    # Cache static assets (simplified approach)
-    location ~* \.(jpg|jpeg|gif|png|ico|svg|webp|css|js|woff|woff2|ttf|eot|otf|map|html|txt)$ {
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-    }
+    # [Outros blocos mantidos: API, Portal, PHP, Security, Cache]
 }
 ```
 
-### Key Fixes Applied (2025-01-25)
-- ✅ **Root directory**: Set to `/var/www/html/public` for proper EspoCRM routing
-- ✅ **Client alias**: Direct `/client/` → `/var/www/html/client/` mapping for frontend assets
-- ✅ **Simplified static asset caching**: Single rule for all file types
-- ✅ **Removed complex asset rules**: No more conflicting CSS/JS/font location blocks
-- ✅ **Clean routing**: All PHP requests properly handled through index.php
+### Mudanças Aplicadas (2025-01-25)
+- ✅ **Root Directory**: O nginx.conf agora aponta para `/var/www/html/public`
+- ✅ **Assets JS/CSS**: Assets JS/CSS do EspoCRM são servidos via `/client/` com alias `/var/www/html/client/`
+- ✅ **Try Files**: Cliente agora usa `try_files $uri $uri/ /index.php?$query_string`
+- ✅ **Dockerfile.full**: Mantém `COPY nginx.conf /etc/nginx/nginx.conf`
+- ✅ **Segurança**: Todos blocos de segurança existentes mantidos
 
-### Issues Resolved
-- **404 errors on CSS/JS files**: Fixed with proper client directory alias
-- **Frontend not loading properly**: Angular frontend now serves correctly
-- **Asset serving conflicts**: Removed duplicate and conflicting nginx rules
+### Troubleshooting
+⚠️ **Se aparecer tela branca ou sem estilos**, verificar se o container está com o nginx.conf atualizado:
+```bash
+docker exec -it kwame-crm-app cat /etc/nginx/nginx.conf | grep "root"
+# Deve mostrar: root /var/www/html/public;
+```
+
+### Rebuild Command (Após mudanças)
+```bash
+docker-compose build --no-cache kwame-crm-app
+docker-compose up -d
+```
 
 ### Rebuild and Deploy
 ```bash
