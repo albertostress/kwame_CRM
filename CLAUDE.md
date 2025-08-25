@@ -365,29 +365,24 @@ server {
 - ✅ **Security**: Mantidos todos os blocos de segurança
 - ✅ **FastCGI**: Parâmetros otimizados e organizados
 
-### 403 FORBIDDEN FIX APPLIED (2025-01-25 - CRITICAL)
-- 🔧 **Install Location Fix**: Adicionado bloco PHP específico dentro de `/install/`
-- ✅ **PHP Processing**: `/install/` agora tem seu próprio handler FastCGI
-- ✅ **Root Path**: Mantido `root /var/www/html/` (fora de public/) 
-- ✅ **Script Filename**: Configurado corretamente para install wizard
-- 🎯 **Problem Solved**: 403 Forbidden em `/install/index.php` resolvido
+### 403 FORBIDDEN FIX APPLIED (2025-01-25 - DEFINITIVE)
+- 🚨 **Root Cause Found**: Install directory está em `/var/www/html/public/install/`
+- 🔧 **Install Location Fix**: Removido root override - usa mesmo root do main app
+- ✅ **Simplified Routing**: `/install/` usa try_files padrão
+- ✅ **PHP Processing**: Processado pelo bloco PHP global do server
+- 🎯 **Problem Solved**: 403 Forbidden deve estar resolvido
 
 ```nginx
-# Install wizard - WITH PHP PROCESSING
+# Install wizard - SIMPLIFIED (uses main server root)
 location /install/ {
-    root /var/www/html/;
-    index index.php;
+    # Use same root as main app since install is in public/install
     try_files $uri $uri/ /install/index.php?$query_string;
-
-    location ~ \.php$ {
-        fastcgi_pass 127.0.0.1:9000;
-        fastcgi_index index.php;
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_read_timeout 180;
-    }
 }
 ```
+
+**CRITICAL INSIGHT**: O diretório de instalação está localizado em:
+- ✅ **Correto**: `/var/www/html/public/install/` (dentro de public)
+- ❌ **Erro anterior**: Tentativa de acessar `/var/www/html/install/` (fora de public)
 
 ### IMPORTANTE - Estrutura de Arquivos
 ```
@@ -397,7 +392,7 @@ location /install/ {
 │   ├── index.php       # ✅ MAIN ENTRY POINT (nginx deve apontar aqui!)
 │   ├── api/v1/
 │   ├── portal/
-│   └── install/
+│   ├── install/        # ✅ INSTALL WIZARD (acessível via /install/)
 ├── client/             # Assets JS/CSS
 ├── application/        # Backend PHP
 └── data/              # Cache, configs, uploads
