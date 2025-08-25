@@ -365,6 +365,30 @@ server {
 - ✅ **Security**: Mantidos todos os blocos de segurança
 - ✅ **FastCGI**: Parâmetros otimizados e organizados
 
+### 403 FORBIDDEN FIX APPLIED (2025-01-25 - CRITICAL)
+- 🔧 **Install Location Fix**: Adicionado bloco PHP específico dentro de `/install/`
+- ✅ **PHP Processing**: `/install/` agora tem seu próprio handler FastCGI
+- ✅ **Root Path**: Mantido `root /var/www/html/` (fora de public/) 
+- ✅ **Script Filename**: Configurado corretamente para install wizard
+- 🎯 **Problem Solved**: 403 Forbidden em `/install/index.php` resolvido
+
+```nginx
+# Install wizard - WITH PHP PROCESSING
+location /install/ {
+    root /var/www/html/;
+    index index.php;
+    try_files $uri $uri/ /install/index.php?$query_string;
+
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_read_timeout 180;
+    }
+}
+```
+
 ### IMPORTANTE - Estrutura de Arquivos
 ```
 /var/www/html/
@@ -409,14 +433,30 @@ docker exec -it kwame-crm-app nginx -t
 
 # Test all critical endpoints
 docker exec -it kwame-crm-app curl -I http://localhost/
-docker exec -it kwame-crm-app curl -I http://localhost/install/
 docker exec -it kwame-crm-app curl -I http://localhost/client/
 docker exec -it kwame-crm-app curl -I http://localhost/api/v1/
+
+# CRITICAL: Test install wizard (should fix 403 Forbidden)
+docker exec -it kwame-crm-app curl -I http://localhost/install/
+docker exec -it kwame-crm-app curl -I http://localhost/install/index.php
 
 # Test asset caching
 docker exec -it kwame-crm-app curl -I http://localhost/client/css/espo/main.css
 ```
-**Esperado:** `HTTP/1.1 200 OK` para todos os endpoints, com headers de cache para assets
+**Esperado:** 
+- `HTTP/1.1 200 OK` para todos os endpoints
+- `/install/` e `/install/index.php` devem retornar 200 OK (não mais 403 Forbidden)
+- Headers de cache para assets estáticos
+
+### MANUAL TESTING RECOMMENDED
+```bash
+# 1. Rebuild container with fix
+docker-compose build --no-cache espocrm && docker-compose up -d
+
+# 2. Test in browser
+# Open: https://crm.kwameoilandgas.ao/install/
+# Expected: EspoCRM Installation Wizard (not 403 Forbidden)
+```
 
 ### Debug Commands
 ```bash
