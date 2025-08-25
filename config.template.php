@@ -11,7 +11,8 @@ return array (
     'charset' => 'utf8mb4',
   ),
   'siteUrl' => getenv('SITE_URL') ?: 'https://crm.kwameoilandgas.ao',
-  'isInstalled' => true,
+  // isInstalled will be set by the installer
+  // 'isInstalled' => true,
   'cryptKey' => bin2hex(random_bytes(16)),
   'passwordSalt' => bin2hex(random_bytes(16)),
   'hashSecretKey' => bin2hex(random_bytes(32)),
@@ -198,5 +199,5 @@ return array (
   'webSocketUrl' => 'ws://localhost:8080',
   'webSocketZeroMQSubscriberDsn' => 'tcp://127.0.0.1:7777',
   'webSocketZeroMQSubmissionDsn' => 'tcp://127.0.0.1:7777',
-  'isCustomConfig' => true,
+  // 'isCustomConfig' => true,
 );

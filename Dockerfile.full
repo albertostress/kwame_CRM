@@ -60,7 +60,8 @@ RUN mkdir -p /var/log/supervisor /run/nginx /var/log/nginx \
     && mkdir -p data cache custom client/custom \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
-    && chmod -R 775 data custom client/custom
+    && chmod -R 775 data custom client/custom \
+    && chmod -R 775 public/install
 
 # Copy nginx and supervisor configurations
 COPY nginx.conf /etc/nginx/nginx.conf
@@ -118,27 +119,31 @@ RUN echo '#!/bin/bash' > /start.sh \
     && echo 'chmod -R 775 /var/www/html/client/custom' >> /start.sh \
     && echo 'echo "✅ Permissions fixed for data directories"' >> /start.sh \
     && echo '' >> /start.sh \
-    && echo '# Generate config.php from template if not exists' >> /start.sh \
-    && echo 'if [ ! -f /var/www/html/data/config.php ]; then' >> /start.sh \
-    && echo '  echo "⚙️ Generating EspoCRM config.php from template..."' >> /start.sh \
+    && echo '# 🔍 Check if EspoCRM database has tables FIRST' >> /start.sh \
+    && echo 'echo "🔍 Checking database initialization status..."' >> /start.sh \
+    && echo 'DB_HAS_TABLES=false' >> /start.sh \
+    && echo 'if mysql -h"${DB_HOST}" -u"${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}" -e "SHOW TABLES;" 2>/dev/null | grep -q .; then' >> /start.sh \
+    && echo '  echo "✅ Database ${DB_NAME} already initialized with tables"' >> /start.sh \
+    && echo '  DB_HAS_TABLES=true' >> /start.sh \
+    && echo 'else' >> /start.sh \
+    && echo '  echo "⚠️ Database ${DB_NAME} is empty - will trigger installation wizard"' >> /start.sh \
+    && echo '  # Clean any existing config to allow fresh install' >> /start.sh \
+    && echo '  rm -f /var/www/html/data/config.php' >> /start.sh \
+    && echo '  rm -f /var/www/html/data/config-internal.php' >> /start.sh \
+    && echo '  rm -rf /var/www/html/data/cache/*' >> /start.sh \
+    && echo '  echo "🧹 Cleaned config files for fresh installation"' >> /start.sh \
+    && echo 'fi' >> /start.sh \
+    && echo '' >> /start.sh \
+    && echo '# Only generate config.php if database has tables (already installed)' >> /start.sh \
+    && echo 'if [ "$DB_HAS_TABLES" = "true" ] && [ ! -f /var/www/html/data/config.php ]; then' >> /start.sh \
+    && echo '  echo "⚙️ Generating config.php for existing installation..."' >> /start.sh \
     && echo '  php -r "include \"/var/www/html/config.template.php\"; file_put_contents(\"/var/www/html/data/config.php\", \"<?php\\n\" . \"return \" . var_export(include(\"/var/www/html/config.template.php\"), true) . \";\");"' >> /start.sh \
     && echo '  chown www-data:www-data /var/www/html/data/config.php' >> /start.sh \
     && echo '  chmod 640 /var/www/html/data/config.php' >> /start.sh \
-    && echo '  echo "✅ config.php generated successfully"' >> /start.sh \
-    && echo 'else' >> /start.sh \
-    && echo '  echo "✅ config.php already exists, skipping generation"' >> /start.sh \
-    && echo 'fi' >> /start.sh \
-    && echo '' >> /start.sh \
-    && echo '# 🔍 Check if EspoCRM database has tables' >> /start.sh \
-    && echo 'echo "🔍 Checking database initialization status..."' >> /start.sh \
-    && echo 'if mysql -h"${DB_HOST}" -u"${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}" -e "SHOW TABLES;" 2>/dev/null | grep -q .; then' >> /start.sh \
-    && echo '  echo "✅ Database ${DB_NAME} already initialized with tables"' >> /start.sh \
-    && echo 'else' >> /start.sh \
-    && echo '  echo "⚠️ Database ${DB_NAME} is empty, forcing installation wizard..."' >> /start.sh \
-    && echo '  rm -f /var/www/html/data/config.php' >> /start.sh \
-    && echo '  rm -rf /var/www/html/data/cache/*' >> /start.sh \
-    && echo '  echo "🧹 Removed config.php to trigger installation wizard"' >> /start.sh \
-    && echo '  # Fix permissions after removal' >> /start.sh \
+    && echo '  echo "✅ config.php generated for existing installation"' >> /start.sh \
+    && echo 'elif [ "$DB_HAS_TABLES" = "false" ]; then' >> /start.sh \
+    && echo '  echo "📝 Fresh installation - EspoCRM wizard will create config.php"' >> /start.sh \
+    && echo '  # Ensure data directory has correct permissions for installer' >> /start.sh \
     && echo '  chown -R www-data:www-data /var/www/html/data' >> /start.sh \
     && echo '  chmod -R 775 /var/www/html/data' >> /start.sh \
     && echo 'fi' >> /start.sh \
