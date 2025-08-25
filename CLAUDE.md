@@ -743,3 +743,115 @@ docker exec <container_id> chown -R www-data:www-data /var/www/html/data
 ```
 
 **Nota**: As permissões são corrigidas automaticamente no startup, mas podem ser necessárias correções manuais após updates ou migrações.
+
+## 🔄 Recovery & First Install
+**Timestamp: 2025-01-24**
+
+### Detecção Automática de Base de Dados Vazia
+O container verifica automaticamente se a base de dados tem tabelas:
+- ✅ **Com tabelas**: Inicia normalmente com config.php existente
+- ⚠️ **Sem tabelas**: Remove config.php e força wizard de instalação
+
+### Como Funciona
+```bash
+# No startup, o container executa:
+mysql -h"${DB_HOST}" -u"${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}" -e "SHOW TABLES;"
+
+# Se não encontrar tabelas:
+- Remove /var/www/html/data/config.php
+- Limpa /var/www/html/data/cache/*
+- Corrige permissões
+- Wizard aparece ao abrir o domínio
+```
+
+### Forçar Wizard Manualmente
+Se precisares reinstalar ou reconfigurar:
+
+```bash
+# Remover configuração e cache
+docker exec -it espocrm-app rm -f /var/www/html/data/config.php
+docker exec -it espocrm-app rm -rf /var/www/html/data/cache/*
+
+# Reiniciar container
+docker restart espocrm-app
+
+# Abrir domínio - wizard vai aparecer
+https://crm.kwameoilandgas.ao/install/
+```
+
+### Cenários de Uso
+
+#### 1. **Primeira Instalação**
+- Base de dados vazia → Wizard automático
+- Preencher formulário de instalação
+- Criar admin user
+- Sistema fica configurado
+
+#### 2. **Migração de Base de Dados**
+```bash
+# Importar backup da BD
+docker exec -i espocrm-mysql mysql -uespocrm -pespocrm123 espocrm < backup.sql
+
+# Container detecta tabelas existentes
+# Mantém config.php e inicia normalmente
+```
+
+#### 3. **Reset Completo**
+```bash
+# Limpar base de dados
+docker exec espocrm-mysql mysql -uespocrm -pespocrm123 -e "DROP DATABASE espocrm; CREATE DATABASE espocrm;"
+
+# Reiniciar container
+docker restart espocrm-app
+
+# Wizard aparece automaticamente
+```
+
+### Verificar Estado da Instalação
+```bash
+# Ver se BD tem tabelas
+docker exec espocrm-mysql mysql -uespocrm -pespocrm123 espocrm -e "SHOW TABLES;" | wc -l
+
+# Ver se config.php existe
+docker exec espocrm-app ls -la /var/www/html/data/config.php
+
+# Ver logs do processo de detecção
+docker logs espocrm-app | grep -E "Database|wizard|config.php"
+```
+
+### Troubleshooting
+
+#### Wizard não aparece com BD vazia
+```bash
+# Forçar manualmente
+docker exec espocrm-app bash -c 'rm -f /var/www/html/data/config.php && rm -rf /var/www/html/data/cache/*'
+docker restart espocrm-app
+```
+
+#### Erro "Access denied" no MySQL
+```bash
+# Verificar credenciais
+docker exec espocrm-app printenv | grep DB_
+
+# Testar conexão manual
+docker exec espocrm-app mysql -h"${DB_HOST}" -u"${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}" -e "SELECT 1;"
+```
+
+#### Loop infinito de redirecionamento
+```bash
+# Limpar tudo e reiniciar
+docker exec espocrm-app bash -c 'rm -rf /var/www/html/data/cache/* && rm -f /var/www/html/data/config.php'
+docker exec espocrm-app chown -R www-data:www-data /var/www/html/data
+docker restart espocrm-app
+```
+
+### Notas Importantes
+- 🔐 **Segurança**: O wizard só aparece se a BD estiver vazia
+- 💾 **Persistência**: Volumes mantêm dados entre restarts
+- 🔄 **Automático**: Não requer intervenção manual em instalações normais
+- ⚠️ **Cuidado**: Remover config.php força reinstalação completa
+
+**Comportamento Esperado**:
+1. **BD vazia** → Wizard de instalação
+2. **BD com dados** → Login direto
+3. **Config removido** → Wizard aparece novamente

@@ -115,6 +115,20 @@ RUN echo '#!/bin/bash' > /start.sh \
     && echo '  echo "✅ config.php already exists, skipping generation"' >> /start.sh \
     && echo 'fi' >> /start.sh \
     && echo '' >> /start.sh \
+    && echo '# 🔍 Check if EspoCRM database has tables' >> /start.sh \
+    && echo 'echo "🔍 Checking database initialization status..."' >> /start.sh \
+    && echo 'if mysql -h"${DB_HOST}" -u"${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}" -e "SHOW TABLES;" 2>/dev/null | grep -q .; then' >> /start.sh \
+    && echo '  echo "✅ Database ${DB_NAME} already initialized with tables"' >> /start.sh \
+    && echo 'else' >> /start.sh \
+    && echo '  echo "⚠️ Database ${DB_NAME} is empty, forcing installation wizard..."' >> /start.sh \
+    && echo '  rm -f /var/www/html/data/config.php' >> /start.sh \
+    && echo '  rm -rf /var/www/html/data/cache/*' >> /start.sh \
+    && echo '  echo "🧹 Removed config.php to trigger installation wizard"' >> /start.sh \
+    && echo '  # Fix permissions after removal' >> /start.sh \
+    && echo '  chown -R www-data:www-data /var/www/html/data' >> /start.sh \
+    && echo '  chmod -R 775 /var/www/html/data' >> /start.sh \
+    && echo 'fi' >> /start.sh \
+    && echo '' >> /start.sh \
     && echo '# Clear cache if available' >> /start.sh \
     && echo 'if [ -f /var/www/html/clear_cache.php ]; then' >> /start.sh \
     && echo '  echo "🧹 Clearing EspoCRM cache..."' >> /start.sh \
