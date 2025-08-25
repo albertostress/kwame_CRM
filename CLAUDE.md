@@ -292,16 +292,16 @@ docker compose down && docker compose up --build
 - ✅ **Healthcheck**: Aguarda MySQL healthy + EspoCRM ready
 
 ## 📑 Nginx Configuration
-**Timestamp: 2025-01-25 - HOTFIX: Root corrected to /var/www/html**
+**Timestamp: 2025-01-25 - FINAL FIX: Root must be /var/www/html/public**
 
 ### Current Configuration 
-✅ **O nginx.conf agora aponta para `/var/www/html`** (raiz do EspoCRM)
+✅ **O nginx.conf DEVE apontar para `/var/www/html/public`** (main EspoCRM entry point)
 
 ```nginx
 server {
     listen 80;
     server_name _;
-    root /var/www/html;  # ✅ EspoCRM root directory
+    root /var/www/html/public;  # ✅ EspoCRM public directory (CORRECT)
     index index.php index.html;
 
     # Client assets directory (EspoCRM frontend)
@@ -320,18 +320,32 @@ server {
 }
 ```
 
-### Mudanças Aplicadas (2025-01-25 - HOTFIX)
-- ✅ **Root Directory**: O nginx.conf agora aponta para `/var/www/html` (CORRIGIDO - era public)
+### Mudanças Aplicadas (2025-01-25 - FINAL)
+- ✅ **Root Directory**: O nginx.conf agora aponta para `/var/www/html/public` (DEFINITIVO)
 - ✅ **Assets JS/CSS**: Assets JS/CSS do EspoCRM são servidos via `/client/` diretamente
 - ✅ **Try Files**: Cliente agora usa `try_files $uri $uri/ /index.php?$query_string`
 - ✅ **Dockerfile.full**: Mantém `COPY nginx.conf /etc/nginx/nginx.conf`
 - ✅ **Segurança**: Todos blocos de segurança existentes mantidos
 
+### IMPORTANTE - Estrutura de Arquivos
+```
+/var/www/html/
+├── index.php            # ⚠️ Arquivo de ERRO (mostra "configure webserver")
+├── public/
+│   ├── index.php       # ✅ MAIN ENTRY POINT (nginx deve apontar aqui!)
+│   ├── api/v1/
+│   ├── portal/
+│   └── install/
+├── client/             # Assets JS/CSS
+├── application/        # Backend PHP
+└── data/              # Cache, configs, uploads
+```
+
 ### Troubleshooting
 ⚠️ **Se aparecer tela branca ou sem estilos**, verificar se o container está com o nginx.conf atualizado:
 ```bash
 docker exec -it kwame-crm-app cat /etc/nginx/nginx.conf | grep "root"
-# Deve mostrar: root /var/www/html;
+# Deve mostrar: root /var/www/html/public;
 ```
 
 ### Rebuild Command (Após mudanças)
